@@ -10,7 +10,7 @@ export default function Home() {
           <div className="hero-grid">
             <div className="hero-text">
                 <h1>Sezgisel kararların yerini veriye dayalı netlik alsın</h1>
-              <p>ForgeOps; üretim ve hizmet odaklı işletmelerin operasyonlarını "tek bir doğruluk kaynağında" (single source of truth) birleştirir. Hazır paket sistemlerin dayatmalarıyla değil, işletmenizin gerçek ihtiyaçlarına göre şekillenen sürdürülebilir çözümler sunuyoruz.</p>
+              <p>Opsiron; üretim ve hizmet odaklı işletmelerin operasyonlarını "tek bir doğruluk kaynağında" (single source of truth) birleştirir. Hazır paket sistemlerin dayatmalarıyla değil, işletmenizin gerçek ihtiyaçlarına göre şekillenen sürdürülebilir çözümler sunuyoruz.</p>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <Link to="/products" className="btn btn-primary">Çözümleri İncele</Link>
                 <Link to="/contact" className="btn btn-outline">Bizimle Tanışın</Link>
@@ -42,11 +42,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* WHY FORGEOPS */}
+      {/* WHY Opsiron */}
       <section className="section">
         <div className="container">
           <div className="section-header">
-            <h2>Neden ForgeOps?</h2>
+            <h2>Neden Opsiron?</h2>
             <p>İşletmenizi kalıplara sokan hantal yazılımlar yerine, gerçek sorun noktalarınıza odaklanan modüler bir yaklaşım.</p>
           </div>
           <div className="grid-3">

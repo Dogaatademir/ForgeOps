@@ -29,9 +29,10 @@ export const OverviewPage = () => {
     roastStocks, 
     packagingItems, 
     productionLogs, 
-    salesLogs, 
     orders, 
-    settings 
+    settings,
+    inventoryMovements,
+    getOnHand
   } = useStore();
 
   // --- HESAPLAMALAR ---
@@ -42,33 +43,40 @@ export const OverviewPage = () => {
   // 2. Kavrulmuş Stok Toplamı
   const totalRoastStock = roastStocks.reduce((acc, curr) => acc + curr.stockKg, 0);
 
-  // 3. Paketli Ürün Net Stok (FinishedProductPage mantığı)
+  // 3. Paketli Ürün Net Stok (C1: Movement Ledger'dan hesaplama)
   const finishedInventory = useMemo(() => {
-    const grouped: Record<string, AggregatedProduct> = {};
-    
-    // Üretimleri Ekle
-    productionLogs.forEach(log => {
-      const key = `${log.brand}-${log.productName}-${log.packSize}`;
-      if (!grouped[key]) {
-        grouped[key] = { id: key, productName: log.productName, brand: log.brand, packSize: log.packSize, totalQuantity: 0 };
-      }
-      grouped[key].totalQuantity += log.packCount;
-    });
+    // Tüm hareketlerden benzersiz ürün ID'lerini (Brand-Name-Size) bul
+    const uniqueProductIds = Array.from(new Set(
+        inventoryMovements
+            .filter(m => m.itemType === 'FinishedProduct' && m.status === 'Active')
+            .map(m => m.itemId)
+    ));
 
-    // Satışları Düş
-    salesLogs.forEach(log => {
-        const key = `${log.brand}-${log.productName}-${log.packSize}`;
-        if (grouped[key]) {
-            grouped[key].totalQuantity -= log.quantity;
-        }
+    const products: AggregatedProduct[] = uniqueProductIds.map(id => {
+        // ID'yi parse et
+        const parts = id.split('-');
+        const brand = parts[0] as 'Edition' | 'Hisaraltı';
+        const packSize = parseInt(parts[parts.length - 1]);
+        const productName = parts.slice(1, parts.length - 1).join('-');
+        
+        // Single Source of Truth: getOnHand fonksiyonunu kullan
+        const currentQty = getOnHand('FinishedProduct', id);
+
+        return {
+            id,
+            productName,
+            brand,
+            packSize,
+            totalQuantity: currentQty
+        };
     });
     
-    return Object.values(grouped).filter(i => i.totalQuantity > 0);
-  }, [productionLogs, salesLogs]);
+    return products.filter(i => i.totalQuantity > 0);
+  }, [inventoryMovements, getOnHand]);
 
   const totalFinishedPackets = finishedInventory.reduce((acc, curr) => acc + curr.totalQuantity, 0);
 
-  // 4. Sipariş Durumu
+  // 4. Sipariş Durumu (Sadece Pending, Voided hariç)
   const pendingOrders = orders.filter(o => o.status === 'Pending');
   const pendingOrdersCount = pendingOrders.length;
   const pendingPacketsNeeded = pendingOrders.reduce((acc, curr) => acc + curr.totalQuantity, 0);
@@ -252,7 +260,8 @@ export const OverviewPage = () => {
                     <Box size={18} className="text-neutral-400" strokeWidth={1.5}/>
                 </div>
                 <div className="space-y-4">
-                    {productionLogs.slice(0, 5).map(log => (
+                    {/* Sadece active logları göster */}
+                    {productionLogs.filter(l => l.status !== 'Voided').slice(0, 5).map(log => (
                         <div key={log.id} className="flex justify-between items-center pb-3 border-b border-neutral-50 last:border-0 last:pb-0">
                             <div>
                                 <div className="text-sm font-light text-neutral-900">{log.productName}</div>
@@ -264,7 +273,7 @@ export const OverviewPage = () => {
                             </div>
                         </div>
                     ))}
-                    {productionLogs.length === 0 && <div className="text-neutral-400 text-sm font-light italic text-center py-4">Kayıt yok.</div>}
+                    {productionLogs.filter(l => l.status !== 'Voided').length === 0 && <div className="text-neutral-400 text-sm font-light italic text-center py-4">Kayıt yok.</div>}
                 </div>
             </div>
 
@@ -275,7 +284,8 @@ export const OverviewPage = () => {
                     <Truck size={18} className="text-neutral-400" strokeWidth={1.5}/>
                 </div>
                 <div className="space-y-4">
-                    {orders.slice(0, 5).map(order => (
+                    {/* Sadece Pending veya Shipped göster */}
+                    {orders.filter(o => o.status !== 'Voided').slice(0, 5).map(order => (
                         <div key={order.id} className="flex justify-between items-center pb-3 border-b border-neutral-50 last:border-0 last:pb-0">
                             <div>
                                 <div className="text-sm font-light text-neutral-900">{order.customerName}</div>
@@ -290,7 +300,7 @@ export const OverviewPage = () => {
                             </div>
                         </div>
                     ))}
-                     {orders.length === 0 && <div className="text-neutral-400 text-sm font-light italic text-center py-4">Sipariş yok.</div>}
+                     {orders.filter(o => o.status !== 'Voided').length === 0 && <div className="text-neutral-400 text-sm font-light italic text-center py-4">Sipariş yok.</div>}
                 </div>
             </div>
         </div>

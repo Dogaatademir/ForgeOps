@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 // 1. Logoyu import ediyoruz (Yolun doğru olduğundan emin olun)
-import logoImg from '../assets/ForgeOps.png';
+import logoImg from '../assets/opsiron.png';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,8 +15,8 @@ export default function Navbar() {
       <div className="container nav-inner">
         <Link to="/" className="logo">
           {/* 2. Eski 'logo-box' div'i yerine img etiketi kullanıyoruz */}
-          <img src={logoImg} alt="ForgeOps Logo" className="logo-img" />
-          ForgeOps
+          <img src={logoImg} alt="opsiron Logo" className="logo-img" />
+          Opsiron
         </Link>
         
         {/* ... kodun geri kalanı aynı ... */}

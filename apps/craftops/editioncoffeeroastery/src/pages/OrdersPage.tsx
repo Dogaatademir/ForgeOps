@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Truck, ShoppingCart, Plus, Calendar, Trash2, CheckCircle2, AlertTriangle, ArrowRight, X, PackageMinus, Coins, TrendingUp, TrendingDown, Calculator, RefreshCw, ChefHat, Info } from 'lucide-react';
+import { Truck, ShoppingCart, Plus, CheckCircle2, AlertTriangle, ArrowRight, Ban, UserPlus, Coins, TrendingUp, TrendingDown, Trash2, Calculator, Receipt, Info, ChefHat, RefreshCw, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Modal } from '../components/Modal';
 import type { Order } from '../context/StoreContext';
@@ -10,13 +10,12 @@ interface OrderItemRow {
   quantity: number;
 }
 
-// Simülatör için gelişmiş satır yapısı
 interface SimulatorRow {
   id: string;
   type: 'Product' | 'Recipe';
   productId?: string;
   recipeId?: string;
-  packSize?: number; // 250 veya 1000
+  packSize?: number; 
   bagId?: string;
   frontLabelId?: string;
   backLabelId?: string;
@@ -25,55 +24,68 @@ interface SimulatorRow {
 
 export const OrdersPage = () => {
   const { 
-    productionLogs, salesLogs, orders, addOrder, shipOrder, cancelOrder,
-    recipes, roastStocks, packagingItems 
+    orders, sales, addOrder, shipOrder, cancelOrder, voidSale,
+    packagingItems, parties, addParty,
+    inventoryMovements, recipes, roastStocks
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'Orders' | 'Shipments'>('Orders');
+  // Tab: 'Orders' = Bekleyen Siparişler, 'Sales' = Tamamlanan Satışlar/Sevkler
+  const [activeTab, setActiveTab] = useState<'Orders' | 'Sales'>('Orders');
 
-  // --- STOK VE MALİYET HESAPLAMALARI ---
+  // --- STOK VE MALİYET HESAPLAMALARI (C1: Via Movements) ---
   const { inventoryMap, availableInventory } = useMemo(() => {
     const inventory: Record<string, { 
       id: string; name: string; brand: string; size: number; current: number;
       averageUnitCost: number; totalProducedCost: number; totalProducedCount: number;
     }> = {};
 
-    productionLogs.forEach(log => {
-      const key = `${log.brand}-${log.productName}-${log.packSize}`;
-      if (!inventory[key]) inventory[key] = { id: key, name: log.productName, brand: log.brand, size: log.packSize, current: 0, averageUnitCost: 0, totalProducedCost: 0, totalProducedCount: 0 };
-      inventory[key].current += log.packCount;
-      const logCost = log.totalCost ? log.totalCost : (log.unitCost || 0) * log.packCount;
-      inventory[key].totalProducedCost += logCost;
-      inventory[key].totalProducedCount += log.packCount;
-    });
+    const finishedMovements = inventoryMovements.filter(m => m.itemType === 'FinishedProduct' && m.status === 'Active');
 
-    salesLogs.forEach(log => {
-      const key = `${log.brand}-${log.productName}-${log.packSize}`;
-      if (inventory[key]) inventory[key].current -= log.quantity;
+    finishedMovements.forEach(move => {
+        const key = move.itemId; 
+        const parts = key.split('-');
+        if(parts.length < 3) return;
+        const brand = parts[0];
+        const packSize = parseInt(parts[parts.length - 1]);
+        const productName = parts.slice(1, parts.length - 1).join('-');
+
+        if (!inventory[key]) {
+             inventory[key] = { 
+                 id: key, name: productName, brand: brand, size: packSize, current: 0, 
+                 averageUnitCost: 0, totalProducedCost: 0, totalProducedCount: 0 
+            };
+        }
+
+        inventory[key].current += move.qtyDelta;
+
+        if (move.reason === 'Production' && move.qtyDelta > 0) {
+            const cost = move.totalCost ? move.totalCost : (move.unitCost || 0) * move.qtyDelta;
+            inventory[key].totalProducedCost += cost;
+            inventory[key].totalProducedCount += move.qtyDelta;
+        }
     });
 
     Object.values(inventory).forEach(item => {
         if (item.totalProducedCount > 0) item.averageUnitCost = item.totalProducedCost / item.totalProducedCount;
     });
 
-    return { inventoryMap: inventory, availableInventory: Object.values(inventory) };
-  }, [productionLogs, salesLogs]);
+    return { inventoryMap: inventory, availableInventory: Object.values(inventory).filter(i => i.current > 0 || i.totalProducedCount > 0) };
+  }, [inventoryMovements]);
 
-  // --- FİLTRELER (AMBALAJLAR) ---
+  // --- FİLTRELER (AMBALAJLAR - SİMÜLATÖR İÇİN) ---
   const bags = useMemo(() => packagingItems.filter(p => p.category === 'Bag'), [packagingItems]);
   const frontLabels = useMemo(() => packagingItems.filter(p => p.category === 'Label' && p.labelType === 'Front'), [packagingItems]);
   const backLabels = useMemo(() => packagingItems.filter(p => p.category === 'Label' && p.labelType === 'Back'), [packagingItems]);
 
-  // --- STATE ---
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
-  const modalStatus = selectedOrder ? getOrderStockStatus(selectedOrder) : null;
-
   // Form States (Sipariş)
-  const [customerName, setCustomerName] = useState('');
+  const [customerId, setCustomerId] = useState(''); 
+  const [newCustomerName, setNewCustomerName] = useState('');
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [deliveryDate, setDeliveryDate] = useState(''); 
   const [totalAmount, setTotalAmount] = useState<number>(0); 
@@ -85,6 +97,9 @@ export const OrdersPage = () => {
     { id: '1', type: 'Product', quantity: 1 }
   ]);
   const [simTotalOffer, setSimTotalOffer] = useState<number>(0);
+  const [shippingCost, setShippingCost] = useState<number>(0);
+  
+  const customers = parties.filter(p => (p.type === 'Customer' || p.type === 'Both') && p.status === 'Active');
 
   // --- YARDIMCI FONKSİYONLAR ---
   function getOrderStockStatus(order: Order) {
@@ -98,29 +113,30 @@ export const OrdersPage = () => {
     return { totalMissing, allInStock: totalMissing === 0 };
   }
 
-  function calculateOrderFinancials(order: Order) {
+  function calculateFinancials(items: any[], totalRevenue: number) {
       let totalCost = 0;
-      order.items.forEach(item => {
+      items.forEach(item => {
           const key = `${item.brand}-${item.productName}-${item.packSize}`;
           const unitCost = inventoryMap[key]?.averageUnitCost || 0;
           totalCost += (unitCost * item.quantity);
       });
-      const revenue = order.totalAmount || 0;
+      const revenue = totalRevenue || 0;
       const profit = revenue - totalCost;
-      const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-      return { totalCost, revenue, profit, margin };
+      return { totalCost, revenue, profit };
   }
 
-  // --- SİMÜLATÖR MALİYET HESABI ---
-  // Her satırın maliyetini tek tek hesaplayıp toplamı döndürür
+  // --- SİMÜLATÖR MANTIĞI ---
   const calculateRowCost = (row: SimulatorRow) => {
     let unitCost = 0;
 
     if (row.type === 'Product' && row.productId) {
+        // Hazır ürün seçildiyse mevcut stok maliyetini kullan
         const product = availableInventory.find(p => p.id === row.productId);
         if (product) unitCost = product.averageUnitCost;
     } 
     else if (row.type === 'Recipe' && row.recipeId && row.packSize) {
+        // Reçete seçildiyse: Kahve + Ambalaj maliyeti hesapla
+        
         // 1. Kahve Maliyeti
         let coffeeCostPerKg = 0;
         const recipe = recipes.find(r => r.id === row.recipeId);
@@ -147,24 +163,51 @@ export const OrdersPage = () => {
   };
 
   const calculatedSimData = useMemo(() => {
-    let totalCost = 0;
+    let totalRowCost = 0;
     simRows.forEach(row => {
         const unitCost = calculateRowCost(row);
-        totalCost += (unitCost * row.quantity);
+        totalRowCost += (unitCost * row.quantity);
     });
+    
+    // Toplam Maliyet = Ürün Maliyetleri + Nakliye
+    const totalCost = totalRowCost + shippingCost;
+    
     const profit = simTotalOffer - totalCost;
     const margin = simTotalOffer > 0 ? (profit / simTotalOffer) * 100 : 0;
+    
     return { totalCost, profit, margin };
-  }, [simRows, simTotalOffer, availableInventory, recipes, roastStocks, packagingItems]);
+  }, [simRows, simTotalOffer, shippingCost, availableInventory, recipes, roastStocks, packagingItems]);
 
+  const filterByPackSize = (items: typeof packagingItems, packSize?: number) => {
+    if (!packSize) return items;
+    return items.filter(i => 
+      i.variant === 'Genel' || 
+      i.variant?.includes(packSize.toString())
+    );
+  };
 
-  // --- HANDLERS (ORDER) ---
+  // --- HANDLERS (Sipariş & Müşteri) ---
   const addRow = () => setRows([...rows, { sku: '', quantity: 1 }]);
   const removeRow = (index: number) => { if (rows.length > 1) { const newRows = [...rows]; newRows.splice(index, 1); setRows(newRows); } };
   const updateRow = (index: number, field: keyof OrderItemRow, value: any) => { const newRows = [...rows]; newRows[index] = { ...newRows[index], [field]: value }; setRows(newRows); };
 
+  const handleCreateCustomer = () => {
+    if(!newCustomerName) return alert("Müşteri adı giriniz.");
+    addParty({
+        id: `PRT-${Date.now()}`,
+        type: 'Customer',
+        name: newCustomerName,
+        status: 'Active'
+    });
+    setIsCustomerModalOpen(false);
+    setNewCustomerName('');
+  };
+
   const handleCreateOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return alert("Müşteri seçiniz.");
+
     const items = rows.map(row => {
       const product = availableInventory.find(p => p.id === row.sku);
       if (!product) return null;
@@ -175,14 +218,34 @@ export const OrdersPage = () => {
 
     addOrder({
       id: `ORD-${Math.floor(Math.random() * 9000) + 1000}`,
-      customerName, createDate: orderDate, deliveryDate: deliveryDate || undefined, totalAmount: totalAmount,
-      status: 'Pending', items, note, totalQuantity: items.reduce((sum, i) => sum + i.quantity, 0)
+      customerId: customer.id,
+      customerName: customer.name,
+      createDate: orderDate, 
+      deliveryDate: deliveryDate || undefined, 
+      totalAmount: totalAmount,
+      status: 'Pending', 
+      items, 
+      note, 
+      totalQuantity: items.reduce((sum, i) => sum + i.quantity, 0)
     });
-    resetForm();
+    
+    setCustomerId(''); setTotalAmount(0); setRows([{ sku: '', quantity: 1 }]); setNote(''); setOrderDate(new Date().toISOString().split('T')[0]);
     setIsOrderModalOpen(false);
   };
 
-  // --- HANDLERS (SIMULATOR) ---
+  const handleCancelOrder = (id: string) => {
+      if(window.confirm("Bu sipariş kalıcı olarak İPTAL edilecek. Onaylıyor musunuz?")) {
+          cancelOrder(id, "Kullanıcı tarafından iptal edildi.");
+      }
+  };
+
+  const handleVoidSale = (id: string) => {
+      if(window.confirm("Bu Satış İşlemi İADE alınacak (Stoklar geri yüklenir, Gelir iptal edilir). Onaylıyor musunuz?")) {
+          voidSale(id, "Kullanıcı tarafından iade alındı.");
+      }
+  };
+
+  // --- HANDLERS (Simülatör) ---
   const addSimRow = () => setSimRows([...simRows, { id: Date.now().toString(), type: 'Product', quantity: 1 }]);
   const removeSimRow = (index: number) => { const newRows = [...simRows]; newRows.splice(index, 1); setSimRows(newRows); };
   const updateSimRow = (index: number, field: keyof SimulatorRow, value: any) => { 
@@ -200,13 +263,15 @@ export const OrdersPage = () => {
       }
       setSimRows(newRows); 
   };
-
-  const resetForm = () => {
-    setCustomerName(''); setDeliveryDate(''); setTotalAmount(0); setRows([{ sku: '', quantity: 1 }]); setNote(''); setOrderDate(new Date().toISOString().split('T')[0]);
-    setSimRows([{ id: '1', type: 'Product', quantity: 1 }]); setSimTotalOffer(0);
+  
+  const resetSimForm = () => { 
+      setSimRows([{ id: '1', type: 'Product', quantity: 1 }]); 
+      setSimTotalOffer(0);
+      setShippingCost(0);
   };
 
   const openShipmentModal = (order: Order) => { setSelectedOrder(order); setIsShipmentModalOpen(true); };
+  
   const confirmShipment = () => {
     if (!selectedOrder) return;
     const status = getOrderStockStatus(selectedOrder);
@@ -215,24 +280,11 @@ export const OrdersPage = () => {
     setIsShipmentModalOpen(false); setSelectedOrder(null);
   };
 
-  const filteredOrders = useMemo(() => {
-    if (activeTab === 'Orders') {
-      return orders.filter(o => o.status === 'Pending').sort((a,b) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime());
-    } else {
-      return orders.filter(o => o.status === 'Shipped').sort((a,b) => new Date(b.shipDate!).getTime() - new Date(a.shipDate!).getTime());
-    }
-  }, [orders, activeTab]);
+  // Listeleri Hazırla
+  const pendingOrders = orders.filter(o => o.status === 'Pending').sort((a,b) => new Date(b.createDate).getTime() - new Date(a.createDate).getTime());
+  const activeSales = sales.filter(s => s.status === 'Active').sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
-
-  // --- FİLTRELEME FONKSİYONU ---
-  const filterByPackSize = (items: typeof packagingItems, packSize?: number) => {
-    if (!packSize) return items;
-    return items.filter(i => 
-      i.variant === 'Genel' || 
-      i.variant?.includes(packSize.toString())
-    );
-  };
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -241,13 +293,13 @@ export const OrdersPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
               <h1 className="text-4xl font-light tracking-tight text-neutral-900">SİPARİŞ & SEVKİYAT</h1>
-              <p className="text-neutral-500 mt-1 font-light">Müşteri siparişleri ve ürün çıkış yönetimi</p>
+              <p className="text-neutral-500 mt-1 font-light">Müşteri siparişleri ve gerçekleşen satışlar</p>
             </div>
             <div className="flex gap-3">
-                <button onClick={() => {resetForm(); setIsCalculatorOpen(true);}} className="flex items-center justify-center gap-2 bg-white border border-neutral-300 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-400 hover:text-neutral-900 px-6 py-4 transition-all font-medium tracking-wide">
+                <button onClick={() => {resetSimForm(); setIsCalculatorOpen(true);}} className="flex items-center justify-center gap-2 bg-white border border-neutral-300 text-neutral-600 hover:bg-neutral-50 hover:border-neutral-400 hover:text-neutral-900 px-6 py-4 transition-all font-medium tracking-wide">
                     <Calculator size={18} strokeWidth={1.5} /> <span>FİYAT SİMÜLATÖRÜ</span>
                 </button>
-                <button onClick={() => {resetForm(); setIsOrderModalOpen(true);}} className="flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-4 transition-all font-light tracking-wide">
+                <button onClick={() => { setIsOrderModalOpen(true);}} className="flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-4 transition-all font-light tracking-wide">
                     <Plus size={18} strokeWidth={1.5} /> <span>YENİ SİPARİŞ</span>
                 </button>
             </div>
@@ -258,44 +310,46 @@ export const OrdersPage = () => {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         <div className="flex border-b border-neutral-200">
           <button onClick={() => setActiveTab('Orders')} className={`px-8 py-4 text-sm font-medium tracking-wide transition-colors border-b-2 ${activeTab === 'Orders' ? 'border-neutral-900 text-neutral-900' : 'border-transparent text-neutral-400 hover:text-neutral-600'}`}>
-            BEKLEYEN ({orders.filter(o => o.status === 'Pending').length})
+            BEKLEYEN ({pendingOrders.length})
           </button>
-          <button onClick={() => setActiveTab('Shipments')} className={`px-8 py-4 text-sm font-medium tracking-wide transition-colors border-b-2 ${activeTab === 'Shipments' ? 'border-neutral-900 text-neutral-900' : 'border-transparent text-neutral-400 hover:text-neutral-600'}`}>
-            GEÇMİŞ SEVKİYATLAR
+          <button onClick={() => setActiveTab('Sales')} className={`px-8 py-4 text-sm font-medium tracking-wide transition-colors border-b-2 ${activeTab === 'Sales' ? 'border-neutral-900 text-neutral-900' : 'border-transparent text-neutral-400 hover:text-neutral-600'}`}>
+            TAMAMLANAN SATIŞLAR
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredOrders.map(order => {
+          
+          {/* --- VIEW: ORDERS (Bekleyenler) --- */}
+          {activeTab === 'Orders' && pendingOrders.map(order => {
             const stockStatus = getOrderStockStatus(order);
-            const financials = calculateOrderFinancials(order);
+            const financials = calculateFinancials(order.items, order.totalAmount || 0);
 
             return (
               <div key={order.id} className="bg-white p-6 border border-neutral-200 hover:border-neutral-400 transition-colors flex flex-col justify-between group">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-start gap-3">
-                    <div className={`mt-1 p-2 rounded-full ${order.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
-                      {order.status === 'Pending' ? <ShoppingCart size={20} strokeWidth={1.5}/> : <Truck size={20} strokeWidth={1.5}/>}
+                    <div className="mt-1 p-2 rounded-full bg-amber-50 text-amber-600">
+                      <ShoppingCart size={20} strokeWidth={1.5}/>
                     </div>
                     <div>
                       <h3 className="text-lg font-normal text-neutral-900 leading-tight">{order.customerName}</h3>
                       <div className="text-xs text-neutral-400 font-light mt-1 flex flex-col gap-0.5">
-                          <span>Sipariş: {new Date(order.createDate).toLocaleDateString('tr-TR')}</span>
+                          <span>Sipariş Tarihi: {new Date(order.createDate).toLocaleDateString('tr-TR')}</span>
                           {order.deliveryDate && <span className="text-neutral-600">Teslim: {new Date(order.deliveryDate).toLocaleDateString('tr-TR')}</span>}
                       </div>
                     </div>
                   </div>
-                  {order.status === 'Pending' && <button onClick={() => cancelOrder(order.id)} className="text-neutral-300 hover:text-red-500 transition-colors p-1"><X size={18}/></button>}
+                  <button onClick={() => handleCancelOrder(order.id)} className="text-neutral-300 hover:text-red-500 transition-colors p-1" title="Siparişi İptal Et">
+                      <Ban size={18}/>
+                  </button>
                 </div>
 
-                {order.status === 'Pending' && (
-                  <div className="mb-3">
+                <div className="mb-3">
                     {stockStatus.allInStock ? 
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-wide px-3 py-1 rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 size={14} /> Hazır – Sevk Edilebilir</span> : 
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-wide px-3 py-1 rounded-sm bg-red-50 text-red-700 border border-red-200"><AlertTriangle size={14} /> Stok Yetersiz ({stockStatus.totalMissing} eksik)</span>
                     }
-                  </div>
-                )}
+                </div>
 
                 <div className="flex-1 bg-neutral-50 p-4 mb-4 border border-neutral-100 space-y-3">
                   {order.items.map((item, idx) => (
@@ -309,45 +363,99 @@ export const OrdersPage = () => {
 
                 <div className="mb-4 pt-3 border-t border-neutral-100 grid grid-cols-2 gap-4">
                     <div><span className="text-[10px] uppercase text-neutral-400 tracking-wider block">Sipariş Tutarı</span><span className="text-sm font-medium text-neutral-900 flex items-center gap-1"><Coins size={14} className="text-neutral-400"/> {formatCurrency(financials.revenue)}</span></div>
-                    <div className="text-right"><span className="text-[10px] uppercase text-neutral-400 tracking-wider block">Gerçekleşen Kar</span><div className={`text-sm font-medium flex items-center justify-end gap-1 ${financials.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{financials.profit >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>}{formatCurrency(financials.profit)}</div></div>
+                    <div className="text-right"><span className="text-[10px] uppercase text-neutral-400 tracking-wider block">Tahmini Kar</span><div className={`text-sm font-medium flex items-center justify-end gap-1 ${financials.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{financials.profit >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>}{formatCurrency(financials.profit)}</div></div>
                 </div>
 
                 <div className="flex justify-between items-center pt-2 border-t border-neutral-100">
                   <div className="text-xs uppercase tracking-wider text-neutral-400 font-medium">Top. {order.totalQuantity} Paket</div>
-                  {order.status === 'Pending' ? <button onClick={() => openShipmentModal(order)} className="flex items-center gap-2 bg-neutral-900 text-white px-4 py-2 text-sm font-light hover:bg-neutral-800 transition-colors">SEVK ET <ArrowRight size={14}/></button> : <span className="flex items-center gap-1.5 text-green-600 text-xs font-medium tracking-wide border border-green-200 bg-green-50 px-3 py-1"><CheckCircle2 size={14}/> {new Date(order.shipDate!).toLocaleDateString('tr-TR')}</span>}
+                  <button onClick={() => openShipmentModal(order)} className="flex items-center gap-2 bg-neutral-900 text-white px-4 py-2 text-sm font-light hover:bg-neutral-800 transition-colors">SEVK ET <ArrowRight size={14}/></button>
                 </div>
               </div>
             );
           })}
-          {filteredOrders.length === 0 && <div className="col-span-full py-16 text-center border border-dashed border-neutral-300"><p className="text-neutral-500 font-light">Kayıt bulunamadı.</p></div>}
+
+          {/* --- VIEW: SALES (Tamamlanan) --- */}
+          {activeTab === 'Sales' && activeSales.map(sale => {
+            const financials = calculateFinancials(sale.items, sale.totalAmount);
+            return (
+                <div key={sale.id} className="bg-white p-6 border border-neutral-200 flex flex-col justify-between group relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-50 to-transparent pointer-events-none"></div>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-start gap-3">
+                            <div className="mt-1 p-2 rounded-full bg-green-50 text-green-700"><Receipt size={20} strokeWidth={1.5}/></div>
+                            <div>
+                                <h3 className="text-lg font-normal text-neutral-900 leading-tight">{sale.customerName}</h3>
+                                <div className="text-xs text-neutral-400 font-light mt-1 flex flex-col gap-0.5">
+                                    <span className="font-medium text-neutral-600">Belge No: {sale.id}</span>
+                                    <span>Tarih: {new Date(sale.date).toLocaleDateString('tr-TR')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 bg-neutral-50 p-4 mb-4 border border-neutral-100 space-y-2 opacity-80 hover:opacity-100 transition-opacity">
+                        {sale.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-sm items-center">
+                                <span className="text-neutral-600">{item.productName} <span className="text-xs text-neutral-400">({item.packSize}g)</span></span>
+                                <span className="font-medium text-neutral-900">x {item.quantity}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mb-4 pt-3 border-t border-neutral-100 grid grid-cols-2 gap-4">
+                        <div><span className="text-[10px] uppercase text-neutral-400 tracking-wider block">Satış Tutarı</span><span className="text-sm font-medium text-neutral-900">{formatCurrency(sale.totalAmount)}</span></div>
+                        <div className="text-right"><span className="text-[10px] uppercase text-neutral-400 tracking-wider block">Gerçekleşen Kar</span><span className={`text-sm font-medium ${financials.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(financials.profit)}</span></div>
+                    </div>
+
+                    <div className="flex justify-end pt-2 border-t border-neutral-100">
+                        <button onClick={() => handleVoidSale(sale.id)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded transition-colors">
+                            <Ban size={14}/> <span>SATIŞI İPTAL ET / İADE AL</span>
+                        </button>
+                    </div>
+                </div>
+            )
+          })}
+
+          {((activeTab === 'Orders' && pendingOrders.length === 0) || (activeTab === 'Sales' && activeSales.length === 0)) && (
+             <div className="col-span-full py-24 text-center border-2 border-dashed border-neutral-200 rounded-lg">
+                 <p className="text-neutral-400 font-light">Kayıt bulunamadı.</p>
+             </div>
+          )}
         </div>
       </div>
 
       {/* --- SİPARİŞ OLUŞTURMA MODALI --- */}
       <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="YENİ SİPARİŞ OLUŞTUR">
         <form onSubmit={handleCreateOrder} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Müşteri Adı</label><input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900"/></div>
-            <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Sipariş Tutarı (TL)</label><input required type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value))} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900" placeholder="0.00"/></div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Müşteri</label>
+                <button type="button" onClick={() => setIsCustomerModalOpen(true)} className="text-xs text-neutral-900 underline flex items-center gap-1"><UserPlus size={12}/> Yeni Ekle</button>
+            </div>
+            <select required value={customerId} onChange={e => setCustomerId(e.target.value)} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light appearance-none focus:border-neutral-900">
+                <option value="">Seçiniz...</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Sipariş Tarihi</label><input required type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900"/></div>
-            <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Teslim Tarihi</label><input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900"/></div>
+             <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Sipariş Tutarı (TL)</label><input required type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value))} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900" placeholder="0.00"/></div>
+             <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Sipariş Tarihi</label><input required type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900"/></div>
           </div>
+          <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Teslim Tarihi</label><input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none font-light focus:border-neutral-900"/></div>
 
           <div>
             <div className="flex justify-between items-end mb-2"><label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider">Hazır Ürünler</label><button type="button" onClick={addRow} className="text-xs text-neutral-900 font-medium hover:underline">+ Satır Ekle</button></div>
             <div className="space-y-3 bg-neutral-50 p-4 border border-neutral-200 max-h-[250px] overflow-y-auto">
               {rows.map((row, index) => {
-                const product = availableInventory.find(p => p.id === row.sku);
+                const product = availableInventory.find((p: any) => p.id === row.sku);
                 const isStockLow = product && row.quantity > product.current;
                 return (
                   <div key={index} className="flex gap-2 items-start group">
                     <div className="flex-1">
                       <select required value={row.sku} onChange={e => updateRow(index, 'sku', e.target.value)} className={`w-full px-3 py-2 text-sm border outline-none font-light focus:border-neutral-900 bg-white ${isStockLow ? 'border-red-300 text-red-600' : 'border-neutral-300'}`}>
                         <option value="">Ürün Seçiniz...</option>
-                        {availableInventory.map(p => (<option key={p.id} value={p.id}>{p.name} ({p.brand} - {p.size}g) - Stok: {p.current}</option>))}
+                        {availableInventory.map((p: any) => (<option key={p.id} value={p.id}>{p.name} ({p.brand} - {p.size}g) - Stok: {p.current}</option>))}
                       </select>
                       {isStockLow && <span className="text-[10px] text-red-500 flex items-center gap-1 mt-1"><AlertTriangle size={10}/> Yetersiz Stok (Max: {product.current})</span>}
                     </div>
@@ -363,7 +471,31 @@ export const OrdersPage = () => {
         </form>
       </Modal>
 
-      {/* --- FİYAT SİMÜLATÖRÜ MODALI --- */}
+      {/* MÜŞTERİ EKLEME MODALI */}
+      <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="YENİ MÜŞTERİ EKLE">
+            <div className="space-y-4">
+            <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Müşteri Adı</label><input type="text" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none focus:border-neutral-900" /></div>
+            <button onClick={handleCreateCustomer} className="w-full bg-neutral-900 text-white py-3 font-light hover:bg-neutral-800">KAYDET</button>
+        </div>
+      </Modal>
+
+      {/* Shipment Modal */}
+      {selectedOrder && (
+        <Modal isOpen={isShipmentModalOpen} onClose={() => setIsShipmentModalOpen(false)} title="SEVKİYAT ONAYI">
+          <div className="space-y-4">
+              <div className="p-6 bg-neutral-50 border border-neutral-200 text-center">
+                  <p className="text-sm text-neutral-600">Bu işlem sonucunda stoktan <strong>{selectedOrder.totalQuantity} adet</strong> ürün düşülecek ve finansal satış kaydı oluşturulacaktır.</p>
+                  <div className="mt-4 font-medium text-lg text-neutral-900">{selectedOrder.customerName}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                  <button onClick={() => setIsShipmentModalOpen(false)} className="py-3 border border-neutral-300 text-neutral-600 hover:bg-neutral-50 transition-colors">İptal</button>
+                  <button onClick={confirmShipment} className="py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">Onayla ve Sevk Et</button>
+              </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* FİYAT & KAR SİMÜLATÖRÜ MODALI */}
       <Modal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} title="FİYAT & KAR SİMÜLATÖRÜ">
         <div className="space-y-6">
             <div className="bg-neutral-50 p-4 border border-neutral-200 text-neutral-600 text-xs font-light flex gap-2 items-start">
@@ -469,10 +601,16 @@ export const OrdersPage = () => {
                 </button>
             </div>
 
-            {/* Teklif Tutarı Girişi */}
-            <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Teklif Edilecek Toplam Tutar (TL)</label>
-              <input type="number" min="0" value={simTotalOffer} onChange={e => setSimTotalOffer(Number(e.target.value))} className="w-full px-4 py-4 border border-neutral-300 outline-none text-lg font-light focus:border-neutral-900" placeholder="0.00"/>
+            {/* Nakliye ve Toplam Teklif Tutarı (ALT ALTA) */}
+            <div className="space-y-4">
+                 <div>
+                    <label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider flex items-center gap-1"><Truck size={14}/> Nakliye / Kargo (TL)</label>
+                    <input type="number" min="0" value={shippingCost} onChange={e => setShippingCost(Number(e.target.value))} className="w-full px-4 py-4 border border-neutral-300 outline-none text-lg font-light focus:border-neutral-900" placeholder="0.00"/>
+                 </div>
+                 <div>
+                    <label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Teklif Edilecek Toplam Tutar (TL)</label>
+                    <input type="number" min="0" value={simTotalOffer} onChange={e => setSimTotalOffer(Number(e.target.value))} className="w-full px-4 py-4 border border-neutral-300 outline-none text-lg font-light focus:border-neutral-900" placeholder="0.00"/>
+                 </div>
             </div>
 
             {/* CANLI HESAPLAMA KARTI */}
@@ -491,78 +629,10 @@ export const OrdersPage = () => {
             </div>
 
             <div className="flex justify-end">
-                <button onClick={resetForm} className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 text-sm font-medium px-4 py-2"><RefreshCw size={14}/> Temizle</button>
+                <button onClick={resetSimForm} className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 text-sm font-medium px-4 py-2"><RefreshCw size={14}/> Temizle</button>
             </div>
         </div>
       </Modal>
-
-      {/* Shipment Modal ... (Same as before) */}
-      {selectedOrder && (
-        <Modal isOpen={isShipmentModalOpen} onClose={() => setIsShipmentModalOpen(false)} title="SEVKİYAT ONAYI">
-          <div className="space-y-8">
-            <div className="bg-neutral-50 p-8 border border-neutral-200 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-5"><Truck size={100} /></div>
-              <div className="text-xs font-light text-neutral-400 uppercase tracking-[0.2em] mb-4">ALICI MÜŞTERİ</div>
-              <div className="text-2xl font-light text-neutral-900 leading-tight mb-2">{selectedOrder.customerName}</div>
-              <div className="flex items-center justify-center gap-2 text-xs text-neutral-500 font-light mb-6">
-                <Calendar size={12}/> {new Date(selectedOrder.createDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
-              <div className="mt-6 pt-6 border-t border-neutral-200">
-                <span className="text-5xl font-light text-neutral-900 tracking-tight">{selectedOrder.totalQuantity}</span>
-                <span className="text-sm font-light text-neutral-500 ml-2 tracking-wider">PAKET</span>
-              </div>
-            </div>
-
-            {modalStatus && !modalStatus.allInStock && (
-              <div className="p-4 bg-red-50 border border-red-200 flex gap-2 text-xs text-red-800">
-                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                <div>
-                  <div className="font-semibold tracking-wider uppercase mb-1">Sevkiyat Engellendi</div>
-                  <div>Toplam <span className="font-semibold">{modalStatus.totalMissing} paket</span> eksiğiniz var. Üretim yapmadan çıkış yapamazsınız.</div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <h4 className="font-light text-neutral-900 mb-4 text-sm flex items-center gap-3 tracking-wider">
-                <PackageMinus size={16} className="text-neutral-400" strokeWidth={1.5}/> STOKTAN DÜŞÜLECEKLER
-              </h4>
-              <div className="border border-neutral-200 divide-y divide-neutral-100 max-h-[250px] overflow-y-auto bg-white">
-                {selectedOrder.items.map((item, idx) => {
-                  const key = `${item.brand}-${item.productName}-${item.packSize}`;
-                  const stock = inventoryMap[key]?.current ?? 0;
-                  const remaining = stock - item.quantity;
-                  const isProblem = remaining < 0;
-
-                  return (
-                    <div key={idx} className="flex justify-between items-center p-4">
-                      <div>
-                        <div className="text-sm font-light text-neutral-900">{item.productName}</div>
-                        <div className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider mt-0.5">{item.brand} · {item.packSize}g</div>
-                        <div className="flex items-center gap-2 mt-1">
-                             <div className="text-[10px] text-neutral-500">Mevcut: {stock}</div>
-                             <ArrowRight size={10} className="text-neutral-300"/>
-                             <div className={`text-[10px] font-medium ${isProblem ? 'text-red-600' : 'text-green-600'}`}>
-                                Kalan: {remaining}
-                             </div>
-                        </div>
-                      </div>
-                      <div className="text-lg font-light text-neutral-900">{item.quantity} <span className="text-xs text-neutral-400">ad.</span></div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <button onClick={() => setIsShipmentModalOpen(false)} className="py-4 font-light text-neutral-600 bg-white border border-neutral-300 hover:bg-neutral-50 transition-colors tracking-wide">İPTAL</button>
-              <button onClick={confirmShipment} disabled={modalStatus ? !modalStatus.allInStock : false} className={`py-4 font-light text-white transition-colors tracking-wide ${modalStatus && !modalStatus.allInStock ? 'bg-neutral-300 cursor-not-allowed' : 'bg-neutral-900 hover:bg-neutral-800 active:scale-[0.99]'}`}>
-                ONAYLA VE DÜŞ
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

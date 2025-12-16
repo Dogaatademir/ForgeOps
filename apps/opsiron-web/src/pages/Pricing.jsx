@@ -46,13 +46,13 @@ export default function Pricing() {
         <div className="container">
            <h1>İşletmenize Değer Katan Model</h1>
           <p style={{ maxWidth: '700px', marginBottom: '1.5rem' }}>
-            ForgeOps çözümleri, işletmenizin ihtiyacına göre modüler olarak yapılandırılır. İhtiyacınız olmayan özelliklere para ödemez, kullandıkça büyütürsünüz.
+            Opsiron çözümleri, işletmenizin ihtiyacına göre modüler olarak yapılandırılır. İhtiyacınız olmayan özelliklere para ödemez, kullandıkça büyütürsünüz.
           </p>
           
           {/* Eklenen Not */}
           <div style={{display: 'inline-block', background: 'rgba(255,255,255,0.1)', padding: '0.8rem 1.2rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)'}}>
              <p style={{fontSize: '0.9rem', marginBottom: 0, fontStyle: 'italic', opacity: 0.9}}>
-               "Her işletmenin ihtiyacı farklıdır. Bu nedenle ForgeOps’ta hazır bir fiyat listesi değil, işletmenize özel bir teklif sunarız."
+               "Her işletmenin ihtiyacı farklıdır. Bu nedenle Opsiron’ta hazır bir fiyat listesi değil, işletmenize özel bir teklif sunarız."
              </p>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function Pricing() {
               <span className="u-label">Çalışma Prensibi</span>
               <h2>Hizmet Modeli & Kurulum</h2>
               <p style={{ marginBottom: '1.5rem' }}>
-                ForgeOps, "indir ve kur" mantığıyla çalışmaz. İşletmenizin verilerini güvence altına alan iki aşamalı bir süreç uygularız.
+                Opsiron, "indir ve kur" mantığıyla çalışmaz. İşletmenizin verilerini güvence altına alan iki aşamalı bir süreç uygularız.
               </p>
 
               <div style={{ marginBottom: '1rem' }}>

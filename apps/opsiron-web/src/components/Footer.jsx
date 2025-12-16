@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-col">
-            <h4>ForgeOps</h4>
+            <h4>opsiron</h4>
             <p style={{ fontSize: '0.9rem', maxWidth: '300px' }}>
               Üretim ve servis işletmelerinin görünmeyen ama en güçlü operasyonel altyapısı.
             </p>
@@ -28,13 +28,13 @@ export default function Footer() {
           <div className="footer-col">
             <h4>Bize Ulaşın</h4>
             <ul>
-              <li><a href="mailto:hello@forgeops.com">hello@forgeops.com</a></li>
+              <li><a href="mailto:hello@opsiron.com">hello@opsiron.com</a></li>
               <li>Ankara, Türkiye</li>
             </ul>
           </div>
         </div>
         <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--text-light)' }}>
-          &copy; 2025 ForgeOps Tüm hakları saklıdır.
+          &copy; 2025 Opsiron Tüm hakları saklıdır.
         </div>
       </div>
     </footer>

@@ -1,6 +1,20 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Bean, Coffee, Package, ClipboardList, Settings, Menu, X, Box, Truck, ShoppingBag } from 'lucide-react'; // ShoppingBag eklendi
+import { 
+  LayoutDashboard, 
+  Bean, 
+  Coffee, 
+  Package, 
+  ClipboardList, 
+  Settings, 
+  Menu, 
+  X, 
+  Box, 
+  Truck, 
+  ShoppingBag,
+  Wallet,      // YENİ: Ödemeler için ikon
+  BarChart3    // YENİ: Raporlar için ikon
+} from 'lucide-react';
 
 interface SidebarItemProps {
   to: string;
@@ -49,13 +63,21 @@ export const Layout = () => {
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        <div className="p-8 border-b border-neutral-200 flex justify-between items-center">
-          <div>
+        {/* --- SIDEBAR HEADER & BRANDING --- */}
+        <div className="p-8 border-b border-neutral-200 flex justify-between items-start">
+          <div className="flex flex-col">
             <h1 className="text-2xl font-bold text-neutral-900 tracking-tight leading-none">
                 edi-<br/>TION
             </h1>
             <p className="text-xs text-neutral-400 mt-2 font-light tracking-wider">COFFEE ROASTERY</p>
+            
+            <div className="mt-4 pt-3 border-t border-neutral-100 w-full">
+               <p className="text-[9px] text-neutral-400 font-medium tracking-wide">
+                 Powered by <span className="text-neutral-600 font-bold">CraftOps</span>
+               </p>
+            </div>
           </div>
+
           {/* Mobile Close Button */}
           <button 
             onClick={() => setIsSidebarOpen(false)} 
@@ -66,33 +88,34 @@ export const Layout = () => {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-          {/* ANA MENÜ */}
           <SidebarItem to="/" icon={LayoutDashboard} label="GENEL BAKIŞ" onClick={closeSidebar} />
           
-          {/* KATEGORİ 1: GİRDİLER (STOK) */}
           <div className="pt-6 pb-3">
             <p className="px-4 text-[10px] font-medium text-neutral-400 uppercase tracking-[0.15em]">Envanter Yönetimi</p>
           </div>
-          {/* YENİ EKLENEN KISIM: Envanterin başına eklendi çünkü stok burayla başlar */}
           <SidebarItem to="/purchases" icon={ShoppingBag} label="Satın Alımlar" onClick={closeSidebar} />
-          
           <SidebarItem to="/green-coffee" icon={Bean} label="Yeşil Çekirdek" onClick={closeSidebar} />
           <SidebarItem to="/packaging-materials" icon={Package} label="Ambalaj & Malzeme" onClick={closeSidebar} />
           <SidebarItem to="/finished-products" icon={Box} label="Hazır Ürünler" onClick={closeSidebar} />
         
-          {/* KATEGORİ 2: SÜREÇLER (İŞLEME) */}
           <div className="pt-6 pb-3">
             <p className="px-4 text-[10px] font-medium text-neutral-400 uppercase tracking-[0.15em]">Operasyon</p>
           </div>
           <SidebarItem to="/roasting" icon={Coffee} label="Kavurma" onClick={closeSidebar} />
           <SidebarItem to="/production" icon={ClipboardList} label="Üretim & Paketleme" onClick={closeSidebar} />
           
-          {/* KATEGORİ 3: ÇIKTILAR (SATIŞ) */}
           <div className="pt-6 pb-3">
             <p className="px-4 text-[10px] font-medium text-neutral-400 uppercase tracking-[0.15em]">Lojistik & Satış</p>
           </div>
-            <SidebarItem to="/orders" icon={Truck} label="Sipariş & Sevkiyat" onClick={closeSidebar} />
-            
+          <SidebarItem to="/orders" icon={Truck} label="Sipariş & Sevkiyat" onClick={closeSidebar} />
+
+          {/* YENİ: FİNANS BÖLÜMÜ */}
+          <div className="pt-6 pb-3">
+            <p className="px-4 text-[10px] font-medium text-neutral-400 uppercase tracking-[0.15em]">Finans</p>
+          </div>
+          <SidebarItem to="/payments" icon={Wallet} label="Kasa & Banka" onClick={closeSidebar} />
+          <SidebarItem to="/finance-reports" icon={BarChart3} label="Raporlar" onClick={closeSidebar} />
+
         </nav>
 
         <div className="p-4 border-t border-neutral-200">
@@ -103,18 +126,29 @@ export const Layout = () => {
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         
-        {/* MOBILE HEADER */}
-        <header className="md:hidden bg-white border-b border-neutral-200 p-4 flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-3">
+        {/* --- MOBILE HEADER --- */}
+        <header className="md:hidden bg-white border-b border-neutral-200 p-4 flex items-start justify-between shrink-0 z-10">
+          <div className="flex items-start gap-3">
              <button 
                onClick={() => setIsSidebarOpen(true)}
-               className="p-2 -ml-2 text-neutral-600 hover:bg-neutral-100 transition-colors"
+               className="p-2 -ml-2 text-neutral-600 hover:bg-neutral-100 transition-colors mt-1"
              >
                <Menu size={24} strokeWidth={1.5} />
              </button>
-             <span className="font-bold text-neutral-900 tracking-wide text-lg leading-none">
-               edi-<br/>TION
-             </span>
+             
+             <div className="flex flex-col">
+                <span className="font-bold text-neutral-900 tracking-wide text-lg leading-none">
+                  edi-<br/>TION
+                </span>
+                <span className="text-[10px] text-neutral-400 font-light tracking-wider mt-1">
+                  COFFEE ROASTERY
+                </span>
+                <div className="mt-1.5 pt-1.5 border-t border-neutral-100">
+                  <span className="text-[8px] text-neutral-400 font-medium tracking-wide">
+                    Powered by <span className="text-neutral-600 font-bold">CraftOps</span>
+                  </span>
+                </div>
+             </div>
           </div>
         </header>
 

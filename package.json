@@ -1,17 +1,17 @@
 {
-  "name": "forgeops-monorepo",
+  "name": "opsiron-monorepo",
   "version": "1.0.0",
-  "description": "ForgeOps monorepo with CraftOps applications",
+  "description": "opsiron monorepo with CraftOps applications",
   "private": true,
   "scripts": {
-    "install:all": "cd apps/forgeops-web && npm install && cd ../craftops/editioncoffeeroastery && npm install",
-    "build:forgeops": "cd apps/forgeops-web && npm run build",
+    "install:all": "cd apps/opsiron-web && npm install && cd ../craftops/editioncoffeeroastery && npm install",
+    "build:opsiron": "cd apps/opsiron-web && npm run build",
     "build:editioncoffee": "cd apps/craftops/editioncoffeeroastery && npm run build",
-    "build:all": "npm run build:forgeops && npm run build:editioncoffee",
-    "dev:forgeops": "cd apps/forgeops-web && npm run dev",
+    "build:all": "npm run build:opsiron && npm run build:editioncoffee",
+    "dev:opsiron": "cd apps/opsiron-web && npm run dev",
     "dev:editioncoffee": "cd apps/craftops/editioncoffeeroastery && npm run dev"
   },
-  "keywords": ["forgeops", "craftops", "monorepo"],
+  "keywords": ["opsiron", "craftops", "monorepo"],
   "author": "",
   "license": "ISC"
 }

@@ -10,7 +10,7 @@ export default function About() {
            
             <h1>Operasyonel Netlik</h1>
             <p style={{maxWidth:'800px'}}>
-              ForgeOps; üretim atölyelerinden hizmet noktalarına kadar uzanan karmaşık süreçlerde, işletmelerin kârlılığını sessizce eriten 'görünmeyen kayıpları' tespit edip görünür kılan stratejik teknoloji ortağınızdır. Excel tabloları, mesajlaşma uygulamaları ve defter notları arasında kaybolan operasyonel veriyi 'Tek Doğruluk Kaynağı' (Single Source of Truth) ilkesiyle tek bir merkezde topluyor; kararlarınızı varsayımlara değil, somut verilere dayandırmanızı sağlıyoruz. </p>
+              Opsiron; üretim atölyelerinden hizmet noktalarına kadar uzanan karmaşık süreçlerde, işletmelerin kârlılığını sessizce eriten 'görünmeyen kayıpları' tespit edip görünür kılan stratejik teknoloji ortağınızdır. Excel tabloları, mesajlaşma uygulamaları ve defter notları arasında kaybolan operasyonel veriyi 'Tek Doğruluk Kaynağı' (Single Source of Truth) ilkesiyle tek bir merkezde topluyor; kararlarınızı varsayımlara değil, somut verilere dayandırmanızı sağlıyoruz. </p>
         </div>
       </section>
 
@@ -24,7 +24,7 @@ export default function About() {
                     </div>
                     <div style={{fontSize: '1.1rem', lineHeight: '1.8', color: 'var(--text-muted)'}}>
                         <p style={{marginBottom: '1.5rem'}}>
-                            ForgeOps, 2025 yılında işletmelerin operasyonel kör noktalarını aydınlatmak için kurulmuş yeni nesil bir teknoloji şirketidir.
+                            Opsiron, 2025 yılında işletmelerin operasyonel kör noktalarını aydınlatmak için kurulmuş yeni nesil bir teknoloji şirketidir.
                         </p>
                         <p style={{marginBottom: '1.5rem'}}>
                             <strong>Biz bir "özel yazılım" ajansı değiliz.</strong> Her müşteri için sıfırdan kod yazmayız. Kendi geliştirdiğimiz güçlü ürün altyapılarını (CraftOps & ServeOps), işletmenizin reçetesine, üretim hattına ve finansal döngüsüne göre <em>yapılandırırız.</em>
@@ -81,7 +81,7 @@ export default function About() {
                 
                 <div>
                     <ul style={{display: 'flex', flexDirection: 'column', gap: '1rem', background:'white', padding:'2rem', borderRadius:'var(--radius)', border:'1px solid var(--border)'}}>
-                        <h3 style={{fontSize:'1.2rem', marginBottom:'0.5rem'}}>ForgeOps Farkı</h3>
+                        <h3 style={{fontSize:'1.2rem', marginBottom:'0.5rem'}}>Opsiron Farkı</h3>
                         {[
                             "Sahada personeli yormayan arayüzler",
                             "Ürün altyapısı üzerine terzi işi kurulum",
@@ -151,7 +151,7 @@ export default function About() {
                 <div>
                     <Layers size={32} style={{marginBottom: '1.5rem', opacity: 0.5}} />
                     <h2>Hizmet Yapısı</h2>
-                    <p>ForgeOps iş birliği iki temel bileşenden oluşur: <strong>Kurulum</strong> ve <strong>Abonelik</strong>.</p>
+                    <p>Opsiron iş birliği iki temel bileşenden oluşur: <strong>Kurulum</strong> ve <strong>Abonelik</strong>.</p>
                     <div style={{marginTop: '2rem'}}>
                         <div style={{marginBottom: '1.5rem'}}>
                             <h3 style={{fontSize: '1.1rem', marginBottom: '0.5rem'}}>1. Kurulum (Onboarding)</h3>

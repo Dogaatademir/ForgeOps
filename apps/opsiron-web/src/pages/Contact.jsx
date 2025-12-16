@@ -17,7 +17,7 @@ export default function Contact() {
         <div className="container">
             <h1>İşletmenizi Tanıyalım</h1>
             <p style={{maxWidth:'700px'}}>
-              Size hazır bir paket satmaya çalışmıyoruz. Operasyonel kör noktalarınızı bulmak ve ForgeOps altyapısının size uygun olup olmadığını anlamak için ücretsiz bir keşif görüşmesi planlayalım.
+              Size hazır bir paket satmaya çalışmıyoruz. Operasyonel kör noktalarınızı bulmak ve opsiron altyapısının size uygun olup olmadığını anlamak için ücretsiz bir keşif görüşmesi planlayalım.
             </p>
         </div>
     </section>
@@ -131,7 +131,7 @@ export default function Contact() {
                         
                         <div style={{display:'flex', gap:'1rem', marginBottom:'1rem', alignItems:'center'}}>
                             <Mail className="feature-icon" size={20} style={{marginBottom:0}} />
-                            <a href="mailto:hello@forgeops.com" style={{color:'var(--text-main)', textDecoration:'none'}}>hello@forgeops.com</a>
+                            <a href="mailto:hello@opsiron.com" style={{color:'var(--text-main)', textDecoration:'none'}}>hello@opsiron.com</a>
                         </div>
                         <div style={{display:'flex', gap:'1rem', marginBottom:'1rem', alignItems:'center'}}>
                             <Phone className="feature-icon" size={20} style={{marginBottom:0}} />

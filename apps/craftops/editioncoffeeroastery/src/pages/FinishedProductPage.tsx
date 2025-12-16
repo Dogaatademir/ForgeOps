@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Package, Filter, Tag, Coffee, History, Trash2, Pencil, X, Save, AlertCircle, Coins } from 'lucide-react';
+import { Search, Package, Filter, Tag, Coffee, History, AlertCircle, Coins, Ban } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Modal } from '../components/Modal';
 
@@ -14,75 +14,95 @@ interface AggregatedProduct {
   lastProductionDate: string;
   
   // Hesaplama için geçici alanlar
-  weightedCostSum: number; // Toplam harcanan para (Tüm zamanlar)
-  totalProducedCount: number; // Toplam üretilen adet (Tüm zamanlar)
+  weightedCostSum: number; // Toplam harcanan para (Stoktaki ürünlerin maliyeti)
   
   // Sonuç alanları
   averageUnitCost: number; // Birim Maliyet
 }
 
 export const FinishedProductPage = () => {
-  const { productionLogs, salesLogs, settings, deleteProductionLog, updateProductionLog } = useStore();
+  const { productionLogs, inventoryMovements, settings, voidProductionLog } = useStore();
   const { critical, low } = settings.thresholds.finishedProduct;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [brandFilter, setBrandFilter] = useState<'All' | 'Edition' | 'Hisaraltı'>('All');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AggregatedProduct | null>(null);
-  const [editingLogId, setEditingLogId] = useState<string | null>(null);
-  const [editQuantity, setEditQuantity] = useState<number>(0);
 
-  // --- STOK VE MALİYET HESAPLAMASI ---
+  // --- STOK VE MALİYET HESAPLAMASI (NEW: Event Sourcing) ---
   const inventory = useMemo(() => {
     const grouped: Record<string, AggregatedProduct> = {};
     
-    // 1. Üretim verilerini topla (Maliyet ağırlıklı ortalama için)
-    productionLogs.forEach(log => {
-      const key = `${log.brand}-${log.productName}-${log.packSize}`;
-      if (!grouped[key]) {
-        grouped[key] = { 
-            id: key, 
-            productName: log.productName, 
-            brand: log.brand, 
-            packSize: log.packSize, 
-            totalQuantity: 0, 
-            totalKg: 0, 
-            lastProductionDate: log.date,
-            weightedCostSum: 0,
-            totalProducedCount: 0,
-            averageUnitCost: 0
-        };
-      }
-      
-      grouped[key].totalQuantity += log.packCount;
-      grouped[key].totalKg += log.totalCoffeeKg;
-      
-      // Maliyet Hesabı: (Birim Maliyet * Adet) veya (Varsa TotalCost)
-      const logCost = log.totalCost ? log.totalCost : (log.unitCost || 0) * log.packCount;
-      grouped[key].weightedCostSum += logCost;
-      grouped[key].totalProducedCount += log.packCount;
+    // C1: Sadece FinishedProduct tipindeki hareketleri süz
+    const relevantMovements = inventoryMovements.filter(m => m.itemType === 'FinishedProduct' && m.status === 'Active');
 
-      if (new Date(log.date) > new Date(grouped[key].lastProductionDate)) grouped[key].lastProductionDate = log.date;
-    });
+    relevantMovements.forEach(move => {
+        // itemId zaten "Brand-Name-PackSize" formatında tutuluyor.
+        const key = move.itemId;
+        // Parse Name/Brand/Size from ID or find metadata? 
+        // ID formatımız: Brand-Name-PackSize. Parçalayarak detayları alabiliriz.
+        const parts = key.split('-');
+        // Güvenlik: Format dışı veri varsa atla (veya metadata lookup yap)
+        if(parts.length < 3) return; 
 
-    // 2. Satışları düş (Stok miktarını azaltır, birim maliyeti değiştirmez)
-    salesLogs.forEach(log => {
-        const key = `${log.brand}-${log.productName}-${log.packSize}`;
-        if (grouped[key]) {
-            grouped[key].totalQuantity -= log.quantity;
-            const soldKg = (log.quantity * log.packSize) / 1000;
-            grouped[key].totalKg -= soldKg;
+        // Not: parts[0]=Brand, parts[1]=Name, parts[2]=Size. Ancak Name içinde tire olabilir.
+        // Bu yüzden Last index PackSize, First index Brand, arası Name'dir.
+        const brand = parts[0] as 'Edition' | 'Hisaraltı';
+        const packSize = parseInt(parts[parts.length - 1]);
+        const productName = parts.slice(1, parts.length - 1).join('-');
+
+        if (!grouped[key]) {
+            grouped[key] = { 
+                id: key, 
+                productName: productName,
+                brand: brand, 
+                packSize: packSize, 
+                totalQuantity: 0, 
+                totalKg: 0, 
+                lastProductionDate: '2000-01-01',
+                weightedCostSum: 0,
+                averageUnitCost: 0
+            };
+        }
+
+        // 1. Stok Miktarı (Net SUM)
+        grouped[key].totalQuantity += move.qtyDelta;
+        
+        // 2. Ağırlıklı Ortalama Maliyet için veri toplama
+        // Sadece Üretim Girişlerinden maliyet hesabı yapılır (FIFO/AVG mantığı)
+        if (move.reason === 'Production' && move.qtyDelta > 0) {
+            // Eğer totalCost varsa onu kullan, yoksa unitCost * qty
+            const cost = move.totalCost ? move.totalCost : (move.unitCost || 0) * move.qtyDelta;
+            grouped[key].weightedCostSum += cost;
+            // Tarih güncelle
+            if (new Date(move.date) > new Date(grouped[key].lastProductionDate)) grouped[key].lastProductionDate = move.date;
         }
     });
 
-    // 3. Ortalama Birim Maliyeti Hesapla
+    // 3. Sonuçları İşle
     return Object.values(grouped).map(item => {
-        // Eğer hiç üretim maliyeti girilmemişse 0
-        const avgCost = item.totalProducedCount > 0 ? item.weightedCostSum / item.totalProducedCount : 0;
-        return { ...item, averageUnitCost: avgCost };
-    }).sort((a, b) => b.totalQuantity - a.totalQuantity);
+        // TotalKg hesabı
+        item.totalKg = (item.totalQuantity * item.packSize) / 1000;
+        
+        // Ortalama Maliyet Hesabı: (Toplam Giren Maliyet / Toplam Giren Adet) ???
+        // Basitleştirilmiş Yaklaşım: 
+        // Elimizdeki "weightedCostSum" tüm zamanların üretim maliyeti toplamı.
+        // Bunu "Tüm Zamanlar Üretim Adedi"ne bölmeliyiz.
+        // Tekrar döngüye girmemek için yukarıda bir sayaç daha tutabilirdik ama
+        // Burada storeContext'ten bu ürün için toplam üretim adedini çekmek daha doğru olabilir.
+        // VEYA: Hareketlerden "Giriş" olanların toplamını bulalım.
+        
+        const totalProductionCount = relevantMovements
+            .filter(m => m.itemId === item.id && m.reason === 'Production' && m.qtyDelta > 0 && m.status === 'Active')
+            .reduce((acc, m) => acc + m.qtyDelta, 0);
 
-  }, [productionLogs, salesLogs]);
+        const avgCost = totalProductionCount > 0 ? item.weightedCostSum / totalProductionCount : 0;
+        
+        return { ...item, averageUnitCost: avgCost };
+    }).filter(i => i.totalQuantity !== 0 || i.lastProductionDate !== '2000-01-01') // Hiç hareketi olmayanı gizle
+      .sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+  }, [inventoryMovements]);
 
   const filteredInventory = inventory.filter(item => {
     return item.productName.toLowerCase().includes(searchTerm.toLowerCase()) && (brandFilter === 'All' || item.brand === brandFilter);
@@ -90,11 +110,19 @@ export const FinishedProductPage = () => {
 
   const getProductLogs = () => {
     if (!selectedProduct) return [];
-    return productionLogs.filter(log => log.productName === selectedProduct.productName && log.brand === selectedProduct.brand && log.packSize === selectedProduct.packSize).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Detayda hala ProductionLog'ları göstermek kullanıcı için daha okunaklı
+    // Ancak Voided olanları göstermiyoruz
+    return productionLogs
+        .filter(log => log.status !== 'Voided')
+        .filter(log => log.productName === selectedProduct.productName && log.brand === selectedProduct.brand && log.packSize === selectedProduct.packSize)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  const handleSaveEdit = (id: string) => { if (editQuantity <= 0) return alert("Miktar > 0 olmalı."); updateProductionLog(id, editQuantity); setEditingLogId(null); };
-  const handleDeleteLog = (id: string) => { if (window.confirm("Silinsin mi?")) deleteProductionLog(id); };
+  const handleVoidLog = (id: string) => { 
+      if (window.confirm("Bu üretim kaydını İPTAL etmek üzeresiniz. Stoklar ve maliyetler etkilenecektir. Onaylıyor musunuz?")) {
+          voidProductionLog(id, "Geçmiş ekranından kullanıcı iptali");
+      }
+  };
 
   // Helper: Para Birimi Formatla
   const formatCurrency = (amount: number) => {
@@ -131,7 +159,6 @@ export const FinishedProductPage = () => {
                 const isOut = item.totalQuantity <= 0;
                 const borderColor = isOut ? 'border-l-red-600' : isCritical ? 'border-l-red-400' : isLow ? 'border-l-amber-400' : 'border-l-green-500';
 
-                // Toplam Stok Değeri
                 const totalStockValue = item.totalQuantity * item.averageUnitCost;
 
                 return (
@@ -146,7 +173,6 @@ export const FinishedProductPage = () => {
                              <Coffee size={14} strokeWidth={1.5}/><span>Net: {item.totalKg.toFixed(1)} kg</span>
                         </div>
                         
-                        {/* MALİYET BİLGİSİ (YENİ EKLENDİ) */}
                         <div className="flex items-center justify-between py-3 border-t border-b border-neutral-50 mb-2">
                              <div className="flex flex-col">
                                 <span className="text-[10px] text-neutral-400 uppercase tracking-wider">Birim Maliyet</span>
@@ -169,7 +195,6 @@ export const FinishedProductPage = () => {
                         <div>
                              <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider mb-1">Stok Miktarı</p>
                              <p className="text-3xl font-light text-neutral-900 tracking-tight">{item.totalQuantity} <span className="text-sm text-neutral-400">pkt</span></p>
-                             {/* Visual Stock Bar */}
                              <div className="w-16 h-1 bg-neutral-100 mt-2"><div className={`h-full ${isOut ? 'bg-red-600' : isCritical ? 'bg-red-400' : isLow ? 'bg-amber-400' : 'bg-neutral-900'}`} style={{width: `${Math.min((item.totalQuantity / 100)*100, 100)}%`}}></div></div>
                         </div>
                         <button onClick={() => {setSelectedProduct(item); setIsHistoryOpen(true);}} className="flex items-center gap-2 px-4 py-2 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 border border-neutral-200 transition-colors text-xs font-medium tracking-wide">
@@ -186,7 +211,7 @@ export const FinishedProductPage = () => {
       {selectedProduct && (
         <Modal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} title={`ÜRETİM GEÇMİŞİ: ${selectedProduct.productName}`}>
             <div className="space-y-6">
-                <div className="bg-amber-50 p-4 border border-amber-200 flex items-start gap-3"><AlertCircle className="text-amber-600 shrink-0" size={18}/><p className="text-xs font-light text-amber-800">Burada sadece üretim kayıtları listelenir.</p></div>
+                <div className="bg-amber-50 p-4 border border-amber-200 flex items-start gap-3"><AlertCircle className="text-amber-600 shrink-0" size={18}/><p className="text-xs font-light text-amber-800">Burada sadece aktif üretim kayıtları listelenir. Hatalı kayıtları iptal edebilirsiniz.</p></div>
                 <div className="max-h-[400px] overflow-y-auto border border-neutral-200">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-neutral-50 text-neutral-500 font-medium text-[10px] uppercase tracking-wider sticky top-0 z-10">
@@ -201,13 +226,14 @@ export const FinishedProductPage = () => {
                             {getProductLogs().map(log => (
                                 <tr key={log.id}>
                                     <td className="px-4 py-3 text-neutral-600 font-light">{new Date(log.date).toLocaleDateString('tr-TR')}</td>
-                                    <td className="px-4 py-3 font-light text-neutral-900">{editingLogId === log.id ? <input type="number" value={editQuantity} onChange={(e) => setEditQuantity(Number(e.target.value))} className="w-20 px-2 py-1 border border-neutral-300"/> : <span>+{log.packCount}</span>}</td>
-                                    {/* GEÇMİŞTEKİ MALİYET */}
+                                    <td className="px-4 py-3 font-light text-neutral-900">+{log.packCount}</td>
                                     <td className="px-4 py-3 text-neutral-500 font-light text-xs">
                                         {log.unitCost ? formatCurrency(log.unitCost) : '-'}
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        {editingLogId === log.id ? <div className="flex justify-end gap-2"><button onClick={() => setEditingLogId(null)}><X size={14}/></button><button onClick={() => handleSaveEdit(log.id)}><Save size={14}/></button></div> : <div className="flex justify-end gap-2"><button onClick={() => {setEditingLogId(log.id); setEditQuantity(log.packCount);}}><Pencil size={16}/></button><button onClick={() => handleDeleteLog(log.id)}><Trash2 size={16}/></button></div>}
+                                        <button onClick={() => handleVoidLog(log.id)} className="p-2 text-neutral-400 hover:text-red-600 transition-colors" title="Kaydı İptal Et (Void)">
+                                            <Ban size={16}/>
+                                        </button>
                                     </td>
                                 </tr>
                             ))}

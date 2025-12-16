@@ -123,7 +123,7 @@ export default function ServeOps() {
                         <button type="submit" className="btn btn-primary" style={{width:'100%'}}>Pilot Programına Başvur</button>
                     </form>
                     <p style={{fontSize:'0.75rem', marginTop:'1rem', opacity:0.7, textAlign:'center'}}>
-                        ForgeOps Mühendisliği ile geliştirilmektedir.
+                        Opsiron Mühendisliği ile geliştirilmektedir.
                     </p>
                 </div>
             </div>

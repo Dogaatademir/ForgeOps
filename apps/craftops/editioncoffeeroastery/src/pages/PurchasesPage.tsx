@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, ShoppingBag, Calendar, Package, Coffee, ArrowDownLeft, Store, Info } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Calendar, Package, Coffee, ArrowDownLeft, Store, Info, UserPlus } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { useStore } from '../context/StoreContext';
 import type { PurchaseLog, GreenCoffee, PackagingItem } from '../context/StoreContext';
@@ -11,25 +11,33 @@ export const PurchasesPage = () => {
     purchases, 
     recordPurchase,
     addGreenCoffee,
-    addPackagingItem
+    addPackagingItem,
+    parties,      
+    addParty,     
+    categories    
   } = useStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPartyModalOpen, setIsPartyModalOpen] = useState(false); 
   const [searchTerm, setSearchTerm] = useState('');
 
   // --- FORM STATES ---
   const [category, setCategory] = useState<'GreenCoffee' | 'Packaging'>('GreenCoffee');
   const [entryMode, setEntryMode] = useState<'Existing' | 'New'>('Existing');
+  
+  const [newSupplierName, setNewSupplierName] = useState('');
 
   const [purchaseForm, setPurchaseForm] = useState<{
     itemId: string;
-    supplier: string;
+    supplierId: string;
+    categoryId: string;
     quantity: number;
     cost: number;
     date: string;
   }>({
     itemId: '',
-    supplier: '',
+    supplierId: '',
+    categoryId: '', 
     quantity: 0,
     cost: 0,
     date: new Date().toISOString().split('T')[0]
@@ -43,7 +51,11 @@ export const PurchasesPage = () => {
     category: 'Bag', brand: 'Genel', name: '', variant: '250g', color: 'White', labelType: 'Front'
   });
 
+  // Helper Lists
   const activeItems = category === 'GreenCoffee' ? greenCoffees : packagingItems;
+  const suppliers = parties.filter(p => p.type === 'Supplier' && p.status === 'Active');
+  const expenseCategories = categories.filter(c => c.type === 'Expense' && c.status === 'Active');
+
   const selectedExistingItem = activeItems.find(i => i.id === purchaseForm.itemId);
 
   const getPackagingDisplayName = (item: PackagingItem) => {
@@ -55,10 +67,29 @@ export const PurchasesPage = () => {
   };
 
   const resetForms = () => {
-    setPurchaseForm({ itemId: '', supplier: '', quantity: 0, cost: 0, date: new Date().toISOString().split('T')[0] });
+    setPurchaseForm({ 
+        itemId: '', 
+        supplierId: '', 
+        categoryId: category === 'GreenCoffee' ? 'CAT-001' : 'CAT-002', 
+        quantity: 0, 
+        cost: 0, 
+        date: new Date().toISOString().split('T')[0] 
+    });
     setNewGreenForm({ name: '', origin: '', process: '' });
     setNewPackForm({ category: 'Bag', brand: 'Genel', name: '', variant: '250g', labelType: 'Front', color: 'White' });
     setEntryMode('Existing');
+  };
+
+  const handleCreateSupplier = () => {
+      if(!newSupplierName) return alert("Tedarikçi adı giriniz.");
+      addParty({
+          id: `PRT-${Date.now()}`,
+          type: 'Supplier',
+          name: newSupplierName,
+          status: 'Active'
+      });
+      setIsPartyModalOpen(false);
+      setNewSupplierName('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,7 +101,6 @@ export const PurchasesPage = () => {
     if (entryMode === 'New') {
       if (category === 'GreenCoffee') {
         const newId = `GC-${Math.floor(1000 + Math.random() * 9000)}`;
-        // 1. Önce Kartı Ekle
         addGreenCoffee({ id: newId, ...newGreenForm, stockKg: 0, entryDate: purchaseForm.date });
         targetItemId = newId;
         targetItemName = newGreenForm.name;
@@ -79,7 +109,6 @@ export const PurchasesPage = () => {
         const finalPackForm = { ...newPackForm };
         if (finalPackForm.category !== 'Bag') { delete (finalPackForm as any).color; }
         if (finalPackForm.category !== 'Label') { delete (finalPackForm as any).labelType; }
-        // 1. Önce Kartı Ekle
         addPackagingItem({ id: newId, ...finalPackForm, stockQuantity: 0, minThreshold: 50 });
         targetItemId = newId;
         targetItemName = newPackForm.name;
@@ -90,19 +119,23 @@ export const PurchasesPage = () => {
       targetItemName = existing.name;
     }
 
-    // 2. Sonra Satın Alımı Kaydet (Artık StoreContext, anında eklenen kartı "prev" state ile görebilecek)
+    const supplier = suppliers.find(s => s.id === purchaseForm.supplierId);
+    if (!supplier) return alert("Tedarikçi seçiniz.");
+
     const newPurchase: PurchaseLog = {
       id: `PUR-${Date.now()}`,
       category,
       itemId: targetItemId,
       itemName: targetItemName,
-      supplier: purchaseForm.supplier,
+      supplierId: supplier.id,
+      supplier: supplier.name, 
+      categoryId: purchaseForm.categoryId,
       quantity: purchaseForm.quantity,
       cost: purchaseForm.cost,
       date: purchaseForm.date
     };
 
-    recordPurchase(newPurchase);
+    recordPurchase(newPurchase); 
     setIsModalOpen(false);
     resetForms();
     alert('İşlem başarıyla kaydedildi.');
@@ -201,14 +234,15 @@ export const PurchasesPage = () => {
           </div>
         </div>
 
+        {/* SATIN ALIM MODALI - GÜNCELLENDİ (YATAY KAYDIRMA KAPATILDI) */}
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="YENİ SATIN ALIM GİRİŞİ">
-          {/* Form içeriği değişmedi, aynı form kullanılacak */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* overflow-x-hidden eklendi, böylece sağa sola kaymaz */}
+          <form onSubmit={handleSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto overflow-x-hidden pr-2">
             <div>
             <label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Satın Alım Türü</label>
             <div className="grid grid-cols-2 gap-4">
-              <button type="button" onClick={() => { setCategory('GreenCoffee'); setPurchaseForm({...purchaseForm, itemId: ''}); setEntryMode('Existing'); }} className={`flex items-center justify-center gap-2 py-4 border transition-all ${category === 'GreenCoffee' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-500 border-neutral-200'}`}><Coffee size={18} /> <span className="text-sm font-light tracking-wide">YEŞİL ÇEKİRDEK</span></button>
-              <button type="button" onClick={() => { setCategory('Packaging'); setPurchaseForm({...purchaseForm, itemId: ''}); setEntryMode('Existing'); }} className={`flex items-center justify-center gap-2 py-4 border transition-all ${category === 'Packaging' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-500 border-neutral-200'}`}><Package size={18} /> <span className="text-sm font-light tracking-wide">AMBALAJ / MALZEME</span></button>
+              <button type="button" onClick={() => { setCategory('GreenCoffee'); setPurchaseForm({...purchaseForm, itemId: '', categoryId: 'CAT-001'}); setEntryMode('Existing'); }} className={`flex items-center justify-center gap-2 py-4 border transition-all ${category === 'GreenCoffee' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-500 border-neutral-200'}`}><Coffee size={18} /> <span className="text-sm font-light tracking-wide">YEŞİL ÇEKİRDEK</span></button>
+              <button type="button" onClick={() => { setCategory('Packaging'); setPurchaseForm({...purchaseForm, itemId: '', categoryId: 'CAT-002'}); setEntryMode('Existing'); }} className={`flex items-center justify-center gap-2 py-4 border transition-all ${category === 'Packaging' ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-500 border-neutral-200'}`}><Package size={18} /> <span className="text-sm font-light tracking-wide">AMBALAJ / MALZEME</span></button>
             </div>
           </div>
 
@@ -268,58 +302,83 @@ export const PurchasesPage = () => {
 
             {entryMode === 'New' && (
                 <>
-                  <div className="pb-2 mb-2 border-b border-neutral-200 text-xs font-bold text-neutral-900 uppercase tracking-wider">YENİ KART OLUŞTURULUYOR</div>
-                  {category === 'GreenCoffee' ? (
-                     <div className="space-y-4">
-                        <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Çekirdek Adı</label><input required type="text" value={newGreenForm.name} onChange={e => setNewGreenForm({...newGreenForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"/></div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Köken (Ülke/Bölge)</label><input required type="text" value={newGreenForm.origin} onChange={e => setNewGreenForm({...newGreenForm, origin: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"/></div>
-                            <div>
-                                <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">İşlem Metodu</label>
-                                <select required value={newGreenForm.process} onChange={e => setNewGreenForm({...newGreenForm, process: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="">Seçiniz</option><option value="Washed">Washed</option><option value="Natural">Natural</option><option value="Honey">Honey</option><option value="Anaerobic">Anaerobic</option></select>
-                            </div>
-                        </div>
-                     </div>
-                  ) : (
-                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Alt Kategori</label>
-                                <select value={newPackForm.category} onChange={e => { const cat = e.target.value as any; setNewPackForm({...newPackForm, category: cat, variant: (cat === 'Bag' || cat === 'Label') ? '250g' : '' });}} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="Bag">Torba</option><option value="Label">Etiket</option><option value="Box">Koli</option></select>
-                            </div>
-                             <div>
-                                <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Marka</label>
-                                <select value={newPackForm.brand} onChange={e => setNewPackForm({...newPackForm, brand: e.target.value as any})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="Genel">Genel</option><option value="Edition">Edition</option><option value="Hisaraltı">Hisaraltı</option></select>
-                            </div>
-                        </div>
-                        <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Malzeme Adı</label><input required type="text" placeholder="Örn: Beyaz Valfli Torba" value={newPackForm.name} onChange={e => setNewPackForm({...newPackForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"/></div>
-                        <div className="grid grid-cols-2 gap-4">
-                             <div>
-                                <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Varyant/Boyut</label>
-                                {(newPackForm.category === 'Bag' || newPackForm.category === 'Label') ? (
-                                    <select value={newPackForm.variant} onChange={e => setNewPackForm({...newPackForm, variant: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="250g">250g</option><option value="1000g">1000g</option><option value="Standart">Standart</option></select>
-                                ) : ( <input type="text" value={newPackForm.variant} onChange={e => setNewPackForm({...newPackForm, variant: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900" /> )}
-                             </div>
-                             {newPackForm.category === 'Bag' && ( <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Renk</label><select value={newPackForm.color} onChange={e => setNewPackForm({...newPackForm, color: e.target.value as any})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="White">Beyaz</option><option value="Black">Siyah</option></select></div> )}
-                             {newPackForm.category === 'Label' && ( <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Etiket Yönü</label><select value={newPackForm.labelType} onChange={e => setNewPackForm({...newPackForm, labelType: e.target.value as any})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="Front">Ön Etiket</option><option value="Back">Arka Etiket</option></select></div> )}
-                        </div>
-                     </div>
-                  )}
+                   <div className="pb-2 mb-2 border-b border-neutral-200 text-xs font-bold text-neutral-900 uppercase tracking-wider">YENİ KART OLUŞTURULUYOR</div>
+                   {category === 'GreenCoffee' ? (
+                       <div className="space-y-4">
+                           <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Çekirdek Adı</label><input required type="text" value={newGreenForm.name} onChange={e => setNewGreenForm({...newGreenForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"/></div>
+                           <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Köken</label><input required type="text" value={newGreenForm.origin} onChange={e => setNewGreenForm({...newGreenForm, origin: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"/></div>
+                                <div>
+                                    <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">İşlem</label>
+                                    <select required value={newGreenForm.process} onChange={e => setNewGreenForm({...newGreenForm, process: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="">Seçiniz</option><option value="Washed">Washed</option><option value="Natural">Natural</option><option value="Honey">Honey</option><option value="Anaerobic">Anaerobic</option></select>
+                                </div>
+                           </div>
+                       </div>
+                   ) : (
+                       <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                  <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Alt Kategori</label>
+                                  <select value={newPackForm.category} onChange={e => { const cat = e.target.value as any; setNewPackForm({...newPackForm, category: cat, variant: (cat === 'Bag' || cat === 'Label') ? '250g' : '' });}} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="Bag">Torba</option><option value="Label">Etiket</option><option value="Box">Koli</option></select>
+                              </div>
+                               <div>
+                                  <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Marka</label>
+                                  <select value={newPackForm.brand} onChange={e => setNewPackForm({...newPackForm, brand: e.target.value as any})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="Genel">Genel</option><option value="Edition">Edition</option><option value="Hisaraltı">Hisaraltı</option></select>
+                              </div>
+                          </div>
+                          <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Malzeme Adı</label><input required type="text" placeholder="Örn: Beyaz Valfli Torba" value={newPackForm.name} onChange={e => setNewPackForm({...newPackForm, name: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"/></div>
+                           <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                  <label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Varyant/Boyut</label>
+                                  {(newPackForm.category === 'Bag' || newPackForm.category === 'Label') ? (
+                                      <select value={newPackForm.variant} onChange={e => setNewPackForm({...newPackForm, variant: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="250g">250g</option><option value="1000g">1000g</option><option value="Standart">Standart</option></select>
+                                  ) : ( <input type="text" value={newPackForm.variant} onChange={e => setNewPackForm({...newPackForm, variant: e.target.value})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900" /> )}
+                               </div>
+                               {newPackForm.category === 'Bag' && ( <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Renk</label><select value={newPackForm.color} onChange={e => setNewPackForm({...newPackForm, color: e.target.value as any})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="White">Beyaz</option><option value="Black">Siyah</option></select></div> )}
+                               {newPackForm.category === 'Label' && ( <div><label className="block text-xs font-medium text-neutral-500 mb-1 uppercase tracking-wider">Etiket Yönü</label><select value={newPackForm.labelType} onChange={e => setNewPackForm({...newPackForm, labelType: e.target.value as any})} className="w-full px-3 py-2 bg-white border border-neutral-300 outline-none focus:border-neutral-900"><option value="Front">Ön Etiket</option><option value="Back">Arka Etiket</option></select></div> )}
+                          </div>
+                       </div>
+                   )}
                 </>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+             {/* TEDARİKÇİ VE KATEGORİ SEÇİMİ (B1, B2) */}
+             <div>
+                <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Tedarikçi</label>
+                    <button type="button" onClick={() => setIsPartyModalOpen(true)} className="text-xs text-neutral-900 underline flex items-center gap-1"><UserPlus size={12}/> Yeni Ekle</button>
+                </div>
+                <select required value={purchaseForm.supplierId} onChange={e => setPurchaseForm({...purchaseForm, supplierId: e.target.value})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light appearance-none focus:border-neutral-900">
+                    <option value="">Seçiniz...</option>
+                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+             </div>
+             <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Gider Kategorisi</label>
+                <select required value={purchaseForm.categoryId} onChange={e => setPurchaseForm({...purchaseForm, categoryId: e.target.value})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light appearance-none focus:border-neutral-900">
+                    {expenseCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div><label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Miktar ({category === 'GreenCoffee' ? 'KG' : 'ADET'})</label><input required type="number" min="0.1" step="0.1" value={purchaseForm.quantity} onChange={e => setPurchaseForm({...purchaseForm, quantity: Number(e.target.value)})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light focus:border-neutral-900" /></div>
             <div><label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Toplam Tutar (TL)</label><input type="number" min="0" value={purchaseForm.cost} onChange={e => setPurchaseForm({...purchaseForm, cost: Number(e.target.value)})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light focus:border-neutral-900" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-             <div><label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Tedarikçi</label><input type="text" value={purchaseForm.supplier} onChange={e => setPurchaseForm({...purchaseForm, supplier: e.target.value})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light focus:border-neutral-900" placeholder="Örn. İthalatçı A.Ş."/></div>
-             <div><label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Tarih</label><input required type="date" value={purchaseForm.date} onChange={e => setPurchaseForm({...purchaseForm, date: e.target.value})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light focus:border-neutral-900" /></div>
-          </div>
+          <div><label className="block text-xs font-medium text-neutral-500 mb-3 uppercase tracking-wider">Tarih</label><input required type="date" value={purchaseForm.date} onChange={e => setPurchaseForm({...purchaseForm, date: e.target.value})} className="w-full px-4 py-3 bg-white border border-neutral-300 outline-none font-light focus:border-neutral-900" /></div>
 
           <button type="submit" className="w-full bg-neutral-900 text-white py-4 font-light tracking-wide hover:bg-neutral-800 transition-all active:scale-[0.99]">{entryMode === 'New' ? 'YENİ ÜRÜNÜ KAYDET VE SATIN AL' : 'SATIN ALIMI KAYDET VE STOĞU ARTIR'}</button>
           </form>
+        </Modal>
+
+        {/* HIZLI TEDARİKÇİ EKLEME MODALI */}
+        <Modal isOpen={isPartyModalOpen} onClose={() => setIsPartyModalOpen(false)} title="YENİ TEDARİKÇİ EKLE">
+            <div className="space-y-4">
+                <div><label className="block text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wider">Firma / Kişi Adı</label><input type="text" value={newSupplierName} onChange={e => setNewSupplierName(e.target.value)} className="w-full px-4 py-3 border border-neutral-300 outline-none focus:border-neutral-900" /></div>
+                <button onClick={handleCreateSupplier} className="w-full bg-neutral-900 text-white py-3 font-light hover:bg-neutral-800">KAYDET</button>
+            </div>
         </Modal>
       </div>
     </div>
