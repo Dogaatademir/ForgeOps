@@ -1,155 +1,326 @@
-import { useState } from 'react';
-import { Mail, Phone, MapPin, MessageSquare, Briefcase, Users, ArrowRight, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Mail, Phone, MapPin, CheckCircle, ArrowRight, Clock, 
+  MessageSquare, Calendar, AlertCircle, ChevronDown 
+} from 'lucide-react';
+
+// Common Components
+import SEO from '../components/common/SEO';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+import Input from '../components/common/Input';
+
+// Logic & Data
+import useForm from '../hooks/useForm';
+import { validateContactForm } from '../utils/validation';
+import { 
+  PAGE_SEO, 
+  CONTACT_INFO, 
+  CONTACT_PROCESS, 
+  LEGAL, 
+  CONTACT_FORM_OPTIONS 
+} from '../constants/content';
 
 export default function Contact() {
-  const [submitted, setSubmitted] = useState(false);
+  
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
+  const [kvkkError, setKvkkError] = useState(false);
 
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    // API entegrasyonu buraya gelecek
-    setSubmitted(true);
-  }
+  // Form State
+  const { 
+    values, 
+    errors, 
+    handleChange, 
+    handleSubmit, 
+    isSubmitting, 
+    isSuccess,
+    resetForm
+  } = useForm(
+    { 
+      name: '', 
+      company: '', 
+      email: '', 
+      phone: '', 
+      interest: '', 
+      message: '' 
+    }, 
+    validateContactForm
+  );
+
+  // Submit Handler
+  const onSubmit = async (formData) => {
+    if (!kvkkAccepted) {
+      setKvkkError(true);
+      return;
+    }
+    setKvkkError(false);
+
+    console.log("Form Data Submitted:", formData);
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
+  };
 
   return (
     <>
-    {/* HERO SECTION */}
-    <section className="hero">
-        <div className="container">
-            <h1>İşletmenizi Tanıyalım</h1>
-            <p style={{maxWidth:'700px'}}>
-              Size hazır bir paket satmaya çalışmıyoruz. Operasyonel kör noktalarınızı bulmak ve opsiron altyapısının size uygun olup olmadığını anlamak için ücretsiz bir keşif görüşmesi planlayalım.
-            </p>
+      {/* 1. SEO */}
+      <SEO 
+        title={PAGE_SEO.contact.title}
+        description={PAGE_SEO.contact.description}
+        keywords={PAGE_SEO.contact.keywords}
+      />
+
+      {/* 2. HERO SECTION */}
+      <header className="pt-[calc(theme(spacing.header)+4rem)] pb-24 border-b border-border-gray bg-page">
+        <div className="container mx-auto px-6">
+            <div className="max-w-3xl">
+                <h1 className="text-4xl md:text-6xl font-light tracking-tighter leading-[1.1] mb-6 text-dark">
+                  İşletmenizi <span className="italic text-muted">Tanıyalım</span>
+                </h1>
+                <p className="text-lg text-muted font-light leading-relaxed">
+                  Size hazır bir paket satmaya çalışmıyoruz. Operasyonel kör noktalarınızı bulmak ve Opsiron altyapısının size uygun olup olmadığını anlamak için ücretsiz bir keşif görüşmesi planlayalım.
+                </p>
+            </div>
         </div>
-    </section>
+      </header>
 
-    <section className="section">
-        <div className="container">
-            <div className="grid-2">
+      {/* 3. MAIN CONTENT GRID */}
+      <section className="py-24 border-b border-border-gray">
+        <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
                 
-                {/* SOL TARA: DETAYLI ANALİZ FORMU */}
-                <div>
-                    {!submitted ? (
-                        <div className="card" style={{borderTop:'4px solid var(--text-main)'}}>
-                            <h3 style={{marginBottom:'1.5rem'}}>Keşif Formu</h3>
-                            <form onSubmit={handleContactSubmit}>
-                                <div className="form-row">
-                                    <div>
-                                        <label className="input-label">Adınız Soyadınız</label>
-                                        <input type="text" className="input" placeholder="Ad Soyad" required />
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Şirket / İşletme Adı</label>
-                                        <input type="text" className="input" placeholder="İşletme Adı" required />
-                                    </div>
+                {/* SOL: İLETİŞİM FORMU (7/12) */}
+                <div className="lg:col-span-7">
+                    {!isSuccess ? (
+                        <Card variant="default" className="border-t-4 border-t-dark p-8 md:p-12 shadow-xl bg-white">
+                            <h3 className="text-2xl font-medium tracking-tight mb-8 text-dark">Keşif Formu</h3>
+                            
+                            <form onSubmit={(e) => handleSubmit(onSubmit, e)} noValidate className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Input 
+                                      label="Adınız Soyadınız"
+                                      name="name"
+                                      placeholder="Ad Soyad"
+                                      value={values.name}
+                                      onChange={handleChange}
+                                      error={errors.name}
+                                      required
+                                    />
+                                    <Input 
+                                      label="Şirket / İşletme Adı"
+                                      name="company"
+                                      placeholder="İşletme Adı"
+                                      value={values.company}
+                                      onChange={handleChange}
+                                      error={errors.company}
+                                      required
+                                    />
                                 </div>
 
-                                <div className="form-row">
-                                    <div>
-                                        <label className="input-label">E-posta Adresi</label>
-                                        <input type="email" className="input" placeholder="ornek@sirket.com" required />
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Telefon</label>
-                                        <input type="tel" className="input" placeholder="0555..." required />
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Input 
+                                      label="E-posta Adresi"
+                                      name="email"
+                                      type="email"
+                                      placeholder="ornek@sirket.com"
+                                      value={values.email}
+                                      onChange={handleChange}
+                                      error={errors.email}
+                                      required
+                                    />
+                                    <Input 
+                                      label="Telefon"
+                                      name="phone"
+                                      type="tel"
+                                      placeholder="05xxxxxxxxx"
+                                      value={values.phone}
+                                      onChange={handleChange}
+                                      error={errors.phone}
+                                      required
+                                    />
                                 </div>
 
-                                {/* YENİ: Segmentasyon Alanları */}
-                                <div className="form-row">
-                                    <div style={{width:'100%'}}>
-                                        <label className="input-label">İlgi Alanınız</label>
-                                        <div style={{position:'relative'}}>
-                                            <select className="input" defaultValue="" required>
-                                                <option value="" disabled>Seçiniz...</option>
-                                                <option value="craftops">CraftOps (Üretim & Stok)</option>
-                                                <option value="serveops">ServeOps (Restoran & Hizmet)</option>
-                                                <option value="consulting">Genel Danışmanlık / Emin Değilim</option>
-                                            </select>
+                                {/* Interest Area Select */}
+                                <div className="w-full">
+                                    <label className="block mb-2 text-[0.9rem] font-semibold text-dark">
+                                        İlgi Alanınız <span className="text-critical">*</span>
+                                    </label>
+                                    <div className="relative group">
+                                        <select 
+                                            name="interest"
+                                            className={`w-full p-4 bg-white border outline-none transition-colors text-[0.95rem] font-sans appearance-none cursor-pointer
+                                              ${errors.interest ? 'border-critical' : 'border-border-gray focus:border-dark'}`}
+                                            value={values.interest}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="" disabled>Seçiniz...</option>
+                                            {CONTACT_FORM_OPTIONS.interestArea.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-light group-focus-within:text-dark transition-colors">
+                                            <ChevronDown size={18} />
                                         </div>
                                     </div>
+                                    {errors.interest && (
+                                        <p className="mt-2 text-xs flex items-center gap-1 text-critical">
+                                            <AlertCircle size={14} /> {errors.interest}
+                                        </p>
+                                    )}
                                 </div>
 
-                                <div style={{marginBottom:'1rem'}}>
-                                    <label className="input-label">Operasyonel Zorluklarınız</label>
-                                    <textarea className="input" style={{minHeight:'120px'}} placeholder="Örn: Stoklarımız tutmuyor, maliyet hesabında zorlanıyoruz..."></textarea>
+                                <Input 
+                                  label="Operasyonel Zorluklarınız"
+                                  name="message"
+                                  type="textarea"
+                                  rows={4}
+                                  placeholder="Örn: Stoklarımız tutmuyor, maliyet hesabında zorlanıyoruz..."
+                                  value={values.message}
+                                  onChange={handleChange}
+                                  error={errors.message}
+                                  required
+                                />
+
+                                {/* KVKK & Submit */}
+                                <div className="pt-4">
+                                    <label className="flex items-start gap-4 cursor-pointer mb-6 group">
+                                        <input 
+                                            type="checkbox" 
+                                            className="mt-1 w-5 h-5 accent-dark border-border-gray rounded-sm cursor-pointer"
+                                            checked={kvkkAccepted}
+                                            onChange={(e) => setKvkkAccepted(e.target.checked)}
+                                        />
+                                        <span className="text-sm text-muted leading-relaxed font-light group-hover:text-dark transition-colors">
+                                            {LEGAL.kvkkText}
+                                        </span>
+                                    </label>
+                                    
+                                    {kvkkError && (
+                                        <p className="text-critical text-xs mb-6 flex items-center gap-1.5 animate-pulse">
+                                            <AlertCircle size={14} /> Lütfen formu göndermek için KVKK metnini onaylayın.
+                                        </p>
+                                    )}
+
+                                    <Button 
+                                      type="submit" 
+                                      variant="primary" 
+                                      className="w-full"
+                                      isLoading={isSubmitting}
+                                      icon={ArrowRight}
+                                      iconPosition="right"
+                                    >
+                                        Keşif Görüşmesi Talep Et
+                                    </Button>
+                                    
+                                    <p className="text-[10px] text-light text-center mt-6 uppercase tracking-widest opacity-60">
+                                        reCAPTCHA protected &bull; Google Privacy & Terms
+                                    </p>
                                 </div>
-                                
-                                <button type="submit" className="btn btn-primary" style={{width:'100%', display:'flex', justifyContent:'center', gap:'0.5rem'}}>
-                                    Keşif Görüşmesi Talep Et <ArrowRight size={18} />
-                                </button>
-                                <p style={{fontSize:'0.75rem', marginTop:'1rem', color:'var(--text-muted)', textAlign:'center'}}>
-                                    Formu göndererek KVKK aydınlatma metnini kabul etmiş olursunuz.
-                                </p>
                             </form>
-                        </div>
+                        </Card>
                     ) : (
-                        <div className="card" style={{textAlign:'center', padding:'3rem 1rem', borderTop:'4px solid var(--status-good)'}}>
-                            <CheckCircle size={64} style={{color:'var(--status-good)', marginBottom:'1.5rem'}} />
-                            <h3>Talebini Aldık!</h3>
-                            <p style={{marginBottom:'2rem'}}>
-                                İşletme profilinizi inceliyoruz. Ekibimiz 24 saat içinde size ulaşıp, <strong>30 dakikalık online keşif görüşmesi</strong> için takvim önerisi sunacak.
+                        // SUCCESS STATE
+                        <Card className="text-center py-20 px-8 border-t-4 border-t-good shadow-xl bg-white animate-[fadeIn_0.5s_ease-out]">
+                            <div className="w-24 h-24 bg-green-50 text-good rounded-full flex items-center justify-center mx-auto mb-8">
+                                <CheckCircle size={48} />
+                            </div>
+                            <h3 className="text-3xl font-medium tracking-tight mb-4 text-dark">Talebini Aldık!</h3>
+                            <p className="text-muted font-light mb-10 max-w-md mx-auto leading-relaxed">
+                                İşletme profilinizi inceliyoruz. Ekibimiz <strong className="text-dark font-medium">{CONTACT_INFO.responseTime}</strong> size ulaşıp, 
+                                30 dakikalık online keşif görüşmesi için takvim önerisi sunacak.
                             </p>
-                            <button className="btn btn-outline" onClick={() => setSubmitted(false)}>Yeni Form Doldur</button>
-                        </div>
+                            <Button 
+                                variant="outline" 
+                                onClick={() => {
+                                    resetForm();
+                                    setKvkkAccepted(false);
+                                }}
+                                className="px-12"
+                            >
+                                Yeni Form Doldur
+                            </Button>
+                        </Card>
                     )}
                 </div>
 
-                {/* SAĞ TARAF: CONTEXT & İLETİŞİM */}
-                <div>
+                {/* SAĞ: BİLGİLENDİRME & İLETİŞİM (5/12) */}
+                <div className="lg:col-span-5 space-y-8">
+                    
                     {/* Süreç Bilgilendirmesi */}
-                    <div className="card" style={{background:'var(--bg-secondary)', marginBottom:'2rem'}}>
-                        <h4 style={{marginBottom:'1.5rem'}}>Süreç Nasıl İşler?</h4>
-                        <ul style={{display:'flex', flexDirection:'column', gap:'1.2rem'}}>
-                            <li style={{display:'flex', gap:'1rem'}}>
-                                <div style={{background:'white', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'50%', fontWeight:'bold', fontSize:'0.9rem', flexShrink:0}}>1</div>
-                                <div>
-                                    <strong style={{display:'block', fontSize:'0.95rem'}}>Ön İnceleme</strong>
-                                    <span style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>Formdaki verilerinize göre işletmenizin yapısını analiz ederiz.</span>
-                                </div>
-                            </li>
-                            <li style={{display:'flex', gap:'1rem'}}>
-                                <div style={{background:'white', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'50%', fontWeight:'bold', fontSize:'0.9rem', flexShrink:0}}>2</div>
-                                <div>
-                                    <strong style={{display:'block', fontSize:'0.95rem'}}>Keşif Toplantısı</strong>
-                                    <span style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>30 dakikalık online görüşmede sorunlarınızı dinler, çözüm haritası çıkarırız.</span>
-                                </div>
-                            </li>
-                            <li style={{display:'flex', gap:'1rem'}}>
-                                <div style={{background:'white', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:'50%', fontWeight:'bold', fontSize:'0.9rem', flexShrink:0}}>3</div>
-                                <div>
-                                    <strong style={{display:'block', fontSize:'0.95rem'}}>Teklif & Demo</strong>
-                                    <span style={{fontSize:'0.85rem', color:'var(--text-muted)'}}>Size özel yapılandırılmış demo ortamı ve fiyat teklifini sunarız.</span>
-                                </div>
-                            </li>
+                    <Card variant="default" className="bg-page border border-border-gray p-8">
+                        <h4 className="text-[0.7rem] uppercase tracking-widest font-bold text-dark mb-8 flex items-center gap-3">
+                            <Clock size={18} /> Süreç Nasıl İşler?
+                        </h4>
+                        <ul className="space-y-8">
+                            {CONTACT_PROCESS.map((step, index) => (
+                                <li key={index} className="flex gap-5 group">
+                                    <div className="bg-white text-dark w-10 h-10 border border-border-gray rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0 transition-transform group-hover:scale-110">
+                                        {step.step}
+                                    </div>
+                                    <div>
+                                        <strong className="block text-base font-medium text-dark tracking-tight">{step.title}</strong>
+                                        <p className="text-sm text-muted font-light leading-relaxed mt-1.5">{step.description}</p>
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
-                    </div>
+                    </Card>
 
                     {/* İletişim Bilgileri */}
-                    <div className="card">
-                        <h3>Doğrudan Ulaşın</h3>
-                        <p style={{fontSize:'0.9rem', marginBottom:'1.5rem'}}>Acil durumlar veya iş birliği teklifleri için:</p>
+                    <Card variant="default" className="p-8 border border-border-gray">
+                        <h3 className="text-xl font-medium tracking-tight mb-6 text-dark">Doğrudan Ulaşın</h3>
+                        <p className="text-[0.9rem] text-muted font-light mb-8">Acil durumlar veya iş birliği teklifleri için kanallarımız:</p>
                         
-                        <div style={{display:'flex', gap:'1rem', marginBottom:'1rem', alignItems:'center'}}>
-                            <Mail className="feature-icon" size={20} style={{marginBottom:0}} />
-                            <a href="mailto:hello@opsiron.com" style={{color:'var(--text-main)', textDecoration:'none'}}>hello@opsiron.com</a>
+                        <div className="space-y-6">
+                            <a href={`mailto:${CONTACT_INFO.email}`} className="flex items-center gap-4 text-dark group hover:translate-x-1 transition-transform">
+                                <div className="w-12 h-12 bg-page border border-border-gray rounded-sm flex items-center justify-center text-light group-hover:text-dark group-hover:border-dark transition-colors">
+                                    <Mail size={22} />
+                                </div>
+                                <span className="font-medium tracking-tight text-lg">{CONTACT_INFO.email}</span>
+                            </a>
+                            
+                            <a href={`tel:${CONTACT_INFO.phoneRaw}`} className="flex items-center gap-4 text-dark group hover:translate-x-1 transition-transform">
+                                <div className="w-12 h-12 bg-page border border-border-gray rounded-sm flex items-center justify-center text-light group-hover:text-dark group-hover:border-dark transition-colors">
+                                    <Phone size={22} />
+                                </div>
+                                <span className="font-medium tracking-tight text-lg">{CONTACT_INFO.phone}</span>
+                            </a>
+                            
+                            <div className="flex items-start gap-4 text-dark">
+                                <div className="w-12 h-12 bg-page border border-border-gray rounded-sm flex items-center justify-center text-light shrink-0">
+                                    <MapPin size={22} />
+                                </div>
+                                <span className="font-light text-[0.95rem] leading-relaxed mt-1">{CONTACT_INFO.address.full}</span>
+                            </div>
                         </div>
-                        <div style={{display:'flex', gap:'1rem', marginBottom:'1rem', alignItems:'center'}}>
-                            <Phone className="feature-icon" size={20} style={{marginBottom:0}} />
-                            <a href="tel:+902120000000" style={{color:'var(--text-main)', textDecoration:'none'}}>+90 (537) 690 33 33</a>
+
+                        {/* Alternatif Butonlar */}
+                        <div className="mt-10 pt-8 border-t border-border-gray grid grid-cols-2 gap-4">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full" 
+                                icon={MessageSquare}
+                                href="https://wa.me/905376903333"
+                            >
+                                WhatsApp
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full" 
+                                icon={Calendar}
+                                href="#" 
+                            >
+                                Takvim
+                            </Button>
                         </div>
-                        <div style={{display:'flex', gap:'1rem', alignItems:'flex-start'}}>
-                            <MapPin className="feature-icon" size={20} style={{marginBottom:0, marginTop:'4px'}} />
-                            <span style={{fontSize:'0.95rem'}}>
-                               
-                                Ankara / Türkiye
-                            </span>
-                        </div>
-                    </div>
+                    </Card>
+
+                   
                 </div>
 
             </div>
         </div>
-    </section>
+      </section>
     </>
   );
 }

@@ -2,11 +2,14 @@
   command = "npm run install:all && npm run build:all"
   publish = "dist"
 
+# 1. KURAL: Alt Uygulama (Bunu Kesinleştiriyoruz)
 [[redirects]]
   from = "/craftops/editioncoffeeroastery/*"
   to = "/craftops/editioncoffeeroastery/index.html"
   status = 200
+  force = true  # <--- BU SATIR KRİTİK!
 
+# 2. KURAL: Ana Uygulama
 [[redirects]]
   from = "/*"
   to = "/index.html"

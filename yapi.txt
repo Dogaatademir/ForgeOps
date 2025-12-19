@@ -1,0 +1,125 @@
+opsiron-monorepo
+├── apps
+│   ├── craftops
+│   │   └── editioncoffeeroastery
+│   │       ├── README.md
+│   │       ├── editionroastery-tree.txt
+│   │       ├── eslint.config.js
+│   │       ├── index.html
+│   │       ├── package-lock.json
+│   │       ├── package.json
+│   │       ├── postcss.config.js
+│   │       ├── public
+│   │       │   └── ForgeOpsLogo.jpg
+│   │       ├── src
+│   │       │   ├── App.css
+│   │       │   ├── App.tsx
+│   │       │   ├── assets
+│   │       │   │   └── react.svg
+│   │       │   ├── components
+│   │       │   │   ├── CustomSelect.tsx
+│   │       │   │   ├── Layout.tsx
+│   │       │   │   └── Modal.tsx
+│   │       │   ├── context
+│   │       │   │   ├── StoreContext.tsx
+│   │       │   │   └── dummyDataGenerator.ts
+│   │       │   ├── index.css
+│   │       │   ├── main.tsx
+│   │       │   └── pages
+│   │       │       ├── FinanceReportsPage.tsx
+│   │       │       ├── FinishedProductPage.tsx
+│   │       │       ├── GreenCoffeePage.tsx
+│   │       │       ├── LoginPage.tsx
+│   │       │       ├── OrdersPage.tsx
+│   │       │       ├── OverviewPage.tsx
+│   │       │       ├── PackagingPage.tsx
+│   │       │       ├── PaymentsPage.tsx
+│   │       │       ├── ProductionPage.tsx
+│   │       │       ├── PurchasesPage.tsx
+│   │       │       ├── RoastingPage.tsx
+│   │       │       └── Settings.tsx
+│   │       ├── tailwind.config.js
+│   │       ├── tsconfig.app.json
+│   │       ├── tsconfig.json
+│   │       ├── tsconfig.node.json
+│   │       └── vite.config.ts
+│   └── opsiron-web
+│       ├── README.md
+│       ├── eslint.config.js
+│       ├── index.html
+│       ├── package-lock.json
+│       ├── package.json
+│       ├── postcss.config.js
+│       ├── public
+│       │   ├── OpsironLogo-v2.png
+│       │   ├── OpsironLogo.png
+│       │   └── opsiron.png
+│       ├── src
+│       │   ├── App.css
+│       │   ├── App.jsx
+│       │   ├── assets
+│       │   │   └── opsiron.png
+│       │   ├── components
+│       │   │   ├── Footer.jsx
+│       │   │   ├── Layout.jsx
+│       │   │   ├── Navbar.jsx
+│       │   │   └── common
+│       │   │       ├── Button.jsx
+│       │   │       ├── Card.jsx
+│       │   │       ├── ErrorBoundary.jsx
+│       │   │       ├── Input.jsx
+│       │   │       ├── Loading.jsx
+│       │   │       ├── SEO.jsx
+│       │   │       └── ScrollToTop.jsx
+│       │   ├── config
+│       │   │   └── seo.js
+│       │   ├── constants
+│       │   │   └── content.js
+│       │   ├── hooks
+│       │   │   └── useForm.js
+│       │   ├── index.css
+│       │   ├── main.jsx
+│       │   ├── pages
+│       │   │   ├── About.jsx
+│       │   │   ├── Contact.jsx
+│       │   │   ├── CraftOps.jsx
+│       │   │   ├── Home.jsx
+│       │   │   ├── NotFound.jsx
+│       │   │   ├── Pricing.jsx
+│       │   │   └── ServeOps.jsx
+│       │   ├── services
+│       │   │   └── api.js
+│       │   └── utils
+│       │       └── validation.js
+│       ├── vite.config.js
+│       └── yapi.txt
+├── dist
+│   ├── OpsironLogo-v2.png
+│   ├── OpsironLogo.png
+│   ├── assets
+│   │   ├── About-DA4mEsR8.js
+│   │   ├── Card-dy7gqg9d.js
+│   │   ├── Contact-Cl4taraq.js
+│   │   ├── CraftOps-C8xrI7oU.js
+│   │   ├── Home-u4yBXhGV.js
+│   │   ├── NotFound-QJZ4MXWR.js
+│   │   ├── Pricing-DMxTthLf.js
+│   │   ├── ServeOps-rp8J7osG.js
+│   │   ├── arrow-right-I6HjshwD.js
+│   │   ├── check-CtPgYo_b.js
+│   │   ├── circle-alert-DJ_CyaYz.js
+│   │   ├── clock-YWoVQ6uc.js
+│   │   ├── index-BOxRD7Hg.js
+│   │   ├── index-VrFdrhvS.css
+│   │   ├── layers-Cr_5p6P1.js
+│   │   ├── opsiron-CXJpZ2_G.png
+│   │   ├── package-BmwKFCDN.js
+│   │   ├── shield-check-BDr_KpR2.js
+│   │   ├── trending-up-CrG7ZmMN.js
+│   │   └── validation-Dnjy6CXw.js
+│   ├── index.html
+│   └── opsiron.png
+├── netlify.toml
+├── package-lock.json
+├── package.json
+└── yapi.txt

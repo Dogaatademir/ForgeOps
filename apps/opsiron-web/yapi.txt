@@ -1,0 +1,50 @@
+opsiron-web
+├── README.md
+├── eslint.config.js
+├── forgeops-tree.txt
+├── index.html
+├── package-lock.json
+├── package.json
+├── public
+│   ├── OpsironLogo-v2.png
+│   ├── OpsironLogo.png
+│   └── opsiron.png
+├── src
+│   ├── App.css
+│   ├── App.jsx
+│   ├── assets
+│   │   └── opsiron.png
+│   ├── components
+│   │   ├── Footer.jsx
+│   │   ├── Layout.jsx
+│   │   ├── Navbar.jsx
+│   │   └── common
+│   │       ├── Button.jsx
+│   │       ├── Card.jsx
+│   │       ├── ErrorBoundary.jsx
+│   │       ├── Input.jsx
+│   │       ├── Loading.jsx
+│   │       ├── SEO.jsx
+│   │       └── ScrollToTop.jsx
+│   ├── config
+│   │   └── seo.js
+│   ├── constants
+│   │   └── content.js
+│   ├── hooks
+│   │   └── useForm.js
+│   ├── index.css
+│   ├── main.jsx
+│   ├── pages
+│   │   ├── About.jsx
+│   │   ├── Contact.jsx
+│   │   ├── CraftOps.jsx
+│   │   ├── Home.jsx
+│   │   ├── NotFound.jsx
+│   │   ├── Pricing.jsx
+│   │   └── ServeOps.jsx
+│   ├── services
+│   │   └── api.js
+│   └── utils
+│       └── validation.js
+├── vite.config.js
+└── yapi.txt

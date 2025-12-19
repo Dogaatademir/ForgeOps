@@ -1,48 +1,62 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu } from 'lucide-react';
-// 1. Logoyu import ediyoruz (Yolun doğru olduğundan emin olun)
-import logoImg from '../assets/opsiron.png';
+import { Menu, X } from 'lucide-react';
+import Button from "./common/Button";
+import { NAVIGATION, SITE_META } from "../constants/content";
+import logoImg from "../assets/opsiron.png";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
 
-  const isActive = (path) => location.pathname === path ? "nav-link active" : "nav-link";
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="navbar">
-      <div className="container nav-inner">
-        <Link to="/" className="logo">
-          {/* 2. Eski 'logo-box' div'i yerine img etiketi kullanıyoruz */}
-          <img src={logoImg} alt="opsiron Logo" className="logo-img" />
-          Opsiron
+    <nav className={`fixed top-0 left-0 right-0 z-[100] h-20 transition-all duration-300 border-b
+      ${isScrolled ? 'bg-white/95 backdrop-blur-md border-border-gray' : 'bg-transparent border-transparent'}`}>
+      
+      <div className="container mx-auto px-6 h-full flex justify-between items-center">
+        {/* LOGO */}
+        <Link to="/" className="flex items-center gap-2 text-4xl tracking-tighter">
+          <img src={logoImg} alt="Logo" className="h-15 w-auto object-contain" />
+          <span className="font-normal">{SITE_META.siteName}</span>
         </Link>
         
-        {/* ... kodun geri kalanı aynı ... */}
-        
-        <div className="nav-links">
+        {/* DESKTOP */}
+        <div className="hidden lg:flex items-center gap-8">
+          {NAVIGATION.map((item) => (
+            <Link 
+              key={item.path} 
+              to={item.path} 
+              className={`text-[1rem] font-medium transition-colors hover:text-dark 
+                ${location.pathname === item.path ? 'text-dark border-b-2 border-dark' : 'text-muted'}`}
+            >
+              {item.label}
+            </Link>
+          ))}
        
-          <Link to="/" className={isActive('/')}>Ana Sayfa</Link>
-          <Link to="/about" className={isActive('/about')}>Hakkımızda</Link>
-          <Link to="/craftops" className={isActive('/craftops')}>CraftOps</Link>
-          <Link to="/serveops" className={isActive('/serveops')}> ServeOps</Link>
-          <Link to="/pricing" className={isActive('/pricing')}> Fiyatlandırma</Link>
-          <Link to="/contact" className={isActive('/contact')}>İletişim</Link>
         </div>
-        <button className="mobile-toggle" onClick={() => setIsOpen(!isOpen)}>
-          <Menu />
+
+        {/* MOBILE TOGGLE */}
+        <button className="lg:hidden text-dark" onClick={() => setIsOpen(!isOpen)}>
+          {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
-      
-      {/* Mobile Menu (Aynı kalacak) */}
-      <div className={`mobile-menu ${isOpen ? 'open' : ''}`} id="mobileMenu">
-         <Link to="/" className="nav-link" onClick={() => setIsOpen(false)}>Ana Sayfa</Link>
-           <Link to="/about" className="nav-link" onClick={() => setIsOpen(false)}>Hakkımızda</Link>
-         <Link to="/craftops" className="nav-link" onClick={() => setIsOpen(false)}>CraftOps</Link>
-         <Link to="/serveops" className="nav-link" onClick={() => setIsOpen(false)}>ServeOps</Link>
-         <Link to="/pricing" className="nav-link" onClick={() => setIsOpen(false)}>Fiyatlandırma</Link>
-         <Link to="/contact" className="nav-link" onClick={() => setIsOpen(false)}>İletişim</Link>
+
+      {/* MOBILE MENU */}
+      <div className={`fixed inset-0 top-20 bg-white z-[90] p-8 flex flex-col gap-6 transition-transform duration-300 lg:hidden
+        ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        {NAVIGATION.map((item) => (
+          <Link key={item.path} to={item.path} className="text-xl font-medium border-b border-page pb-4" onClick={() => setIsOpen(false)}>
+            {item.label}
+          </Link>
+        ))}
+        <Button to="/contact" variant="primary" className="mt-4" onClick={() => setIsOpen(false)}>Hemen Başla</Button>
       </div>
     </nav>
   );

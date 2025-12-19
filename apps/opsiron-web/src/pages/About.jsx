@@ -1,230 +1,208 @@
-import { Link } from 'react-router-dom';
-import { Check, Target, Layers, Settings, Database, TrendingUp, Lightbulb } from 'lucide-react';
+import React from 'react';
+import { 
+  Check, Target, Layers, Settings, Database, 
+  TrendingUp, Lightbulb, ArrowRight 
+} from 'lucide-react';
+
+// Common Components
+import SEO from '../components/common/SEO';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+
+// Data
+import { 
+  PAGE_SEO, 
+  OPSIRON_DIFFERENCE, 
+  WORKING_MODEL, 
+  COMPANY_GOALS, 
+  CTA_MESSAGES 
+} from '../constants/content';
 
 export default function About() {
   return (
     <>
-      {/* Intro / Hero Bölümü */}
-      <section className="hero">
-        <div className="container">
-           
-            <h1>Operasyonel Netlik</h1>
-            <p style={{maxWidth:'800px'}}>
-              Opsiron; üretim atölyelerinden hizmet noktalarına kadar uzanan karmaşık süreçlerde, işletmelerin kârlılığını sessizce eriten 'görünmeyen kayıpları' tespit edip görünür kılan stratejik teknoloji ortağınızdır. Excel tabloları, mesajlaşma uygulamaları ve defter notları arasında kaybolan operasyonel veriyi 'Tek Doğruluk Kaynağı' (Single Source of Truth) ilkesiyle tek bir merkezde topluyor; kararlarınızı varsayımlara değil, somut verilere dayandırmanızı sağlıyoruz. </p>
-        </div>
-      </section>
+      {/* 1. SEO */}
+      <SEO 
+        title={PAGE_SEO.about.title}
+        description={PAGE_SEO.about.description}
+        keywords={PAGE_SEO.about.keywords}
+      />
 
-      {/* Biz Kimiz & Kimlik Bölümü */}
-      <section className="section">
-        <div className="container">
-            <div className="grid-2">
-                <div>
-                    <div className="section-header">
-                        <h2>Biz Kimiz?</h2>
+      {/* 2. HERO SECTION */}
+      <header className="pt-[calc(theme(spacing.header)+4rem)] pb-24 border-b border-border-gray">
+        <div className="container mx-auto px-6">
+            <h1 className="text-4xl md:text-6xl font-light tracking-tighter leading-[1.1] mb-6">
+              Operasyonel <span className="italic text-muted">Netlik</span>
+            </h1>
+            <p className="text-lg text-muted font-light max-w-3xl leading-relaxed">
+              Opsiron; üretim atölyelerinden hizmet noktalarına kadar uzanan karmaşık süreçlerde, 
+              işletmelerin kârlılığını sessizce eriten 'görünmeyen kayıpları' tespit edip görünür kılan 
+              stratejik teknoloji ortağınızdır. Kararlarınızı varsayımlara değil, somut verilere dayandırmanızı sağlıyoruz.
+            </p>
+        </div>
+      </header>
+
+      {/* 3. BİZ KİMİZ & VİZYON */}
+      <section className="py-24 border-b border-border-gray">
+        <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                
+                {/* Sol: Metin */}
+                <article>
+                    <div className="mb-12">
+                        <h2 className="text-3xl md:text-4xl font-light tracking-tighter">Biz Kimiz?</h2>
                     </div>
-                    <div style={{fontSize: '1.1rem', lineHeight: '1.8', color: 'var(--text-muted)'}}>
-                        <p style={{marginBottom: '1.5rem'}}>
+                    <div className="text-muted font-light text-lg leading-relaxed space-y-6">
+                        <p>
                             Opsiron, 2025 yılında işletmelerin operasyonel kör noktalarını aydınlatmak için kurulmuş yeni nesil bir teknoloji şirketidir.
                         </p>
-                        <p style={{marginBottom: '1.5rem'}}>
-                            <strong>Biz bir "özel yazılım" ajansı değiliz.</strong> Her müşteri için sıfırdan kod yazmayız. Kendi geliştirdiğimiz güçlü ürün altyapılarını (CraftOps & ServeOps), işletmenizin reçetesine, üretim hattına ve finansal döngüsüne göre <em>yapılandırırız.</em>
+                        <p>
+                            <strong className="text-dark font-medium">Biz bir "özel yazılım" ajansı değiliz.</strong> Her müşteri için sıfırdan kod yazmayız. 
+                            Kendi geliştirdiğimiz güçlü ürün altyapılarını (CraftOps & ServeOps), işletmenizin reçetesine, 
+                            üretim hattına ve finansal döngüsüne göre <em className="italic">yapılandırırız.</em>
                         </p>
-                        <p style={{marginBottom: 0}}>
+                        <p>
                             Böylece "hazır paket" yazılımların katılığından kurtulurken, "özel yazılım" projelerinin yüksek maliyet ve belirsizlik riskini taşımazsınız.
                         </p>
                     </div>
-                </div>
+                </article>
                 
-                {/* Vizyon Kartı - ServeOps Vurgusu */}
-                <div className="card" style={{background: 'var(--bg-secondary)', borderLeft: '4px solid var(--text-main)'}}>
-                    <div style={{display:'flex', alignItems:'center', gap:'0.8rem', marginBottom:'1rem'}}>
-                        <Lightbulb size={24} />
-                        <h3 style={{margin:0}}>Gelecek Vizyonumuz</h3>
+                {/* Sağ: Vizyon Kartı */}
+                <Card 
+                  variant="bordered" 
+                  className="bg-page border-l-4 border-l-dark p-10" 
+                  role="complementary"
+                >
+                    <div className="flex items-center gap-4 mb-6 text-dark">
+                        <Lightbulb size={28} aria-hidden="true" />
+                        <h3 className="text-2xl font-medium tracking-tight m-0">Gelecek Vizyonumuz</h3>
                     </div>
-                    <p style={{fontSize: '0.95rem', marginBottom: '1rem'}}>
-                        Bugün <strong>CraftOps</strong> ile üretim sahasındaki maliyet ve stok kaçaklarını kontrol altına alıyoruz.
-                    </p>
-                    <p style={{fontSize: '0.95rem', marginBottom: 0}}>
-                        Yakın gelecekte ise geliştirme süreci devam eden <strong>ServeOps</strong> ile restoran ve kafe sektöründe POS verisini iş zekâsına dönüştüren, "ne satmalı, neyi stoklamalı" sorularına yanıt veren akıllı bir ekosistem kurmayı hedefliyoruz.
-                    </p>
-                </div>
+                    <div className="space-y-4 text-muted font-light leading-relaxed">
+                      <p>
+                          Bugün <strong className="text-dark font-medium">CraftOps</strong> ile üretim sahasındaki maliyet ve stok kaçaklarını kontrol altına alıyoruz.
+                      </p>
+                      <p>
+                          Yakın gelecekte ise geliştirme süreci devam eden <strong className="text-dark font-medium">ServeOps</strong> ile restoran ve kafe sektöründe 
+                          POS verisini iş zekâsına dönüştüren, "ne satmalı, neyi stoklamalı" sorularına yanıt veren akıllı bir ekosistem kurmayı hedefliyoruz.
+                      </p>
+                    </div>
+                </Card>
             </div>
         </div>
       </section>
 
-      {/* Yaklaşımımız (Core Messages) */}
-      <section className="section" style={{background: 'var(--bg-secondary, #f8f9fa)'}}>
-        <div className="container">
-            <div className="grid-2">
-                <div>
-                    <h2>Neyi Değiştiriyoruz?</h2>
-                    <p style={{marginBottom: '1.5rem'}}>
-                        Geleneksel işletmelerde veri; Excel dosyalarında, WhatsApp gruplarında ve defter kenarlarında kaybolur. Bu da "tahmini" kararlara ve görünmeyen zararlara yol açar.
-                    </p>
+      {/* 4. YAKLAŞIMIMIZ (Core Messages) */}
+      <section className="py-24 bg-page border-b border-border-gray">
+        <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                
+                {/* Sol: Sorun Tespiti */}
+                <div className="space-y-10">
+                    <div>
+                      <h2 className="text-3xl md:text-4xl font-light tracking-tighter mb-4">Neyi Değiştiriyoruz?</h2>
+                      <p className="text-muted font-light leading-relaxed mb-6">
+                          Geleneksel işletmelerde veri; Excel dosyalarında, WhatsApp gruplarında ve defter kenarlarında kaybolur. 
+                          Bu da "tahmini" kararlara ve görünmeyen zararlara yol açar.
+                      </p>
+                    </div>
                     
-                    <div style={{display:'flex', gap:'1rem', marginBottom:'1.5rem'}}>
-                        <Database className="feature-icon" size={24} />
+                    <div className="flex items-start gap-6">
+                        <div className="p-3 bg-white border border-border-gray rounded-sm shadow-sm shrink-0">
+                          <Database className="text-dark" size={24} aria-hidden="true" />
+                        </div>
                         <div>
-                            <h4 style={{fontSize:'1.1rem', marginBottom:'0.5rem'}}>Tek Doğruluk Kaynağı (SSOT)</h4>
-                            <p style={{fontSize:'0.9rem', color:'var(--text-muted)'}}>Stok, finans ve üretim verisi tek bir merkezde konuşur. Birim maliyetiniz ile kasa durumunuz birbiriyle çelişmez.</p>
+                            <h4 className="text-xl font-medium tracking-tight mb-2">Tek Doğruluk Kaynağı (SSOT)</h4>
+                            <p className="text-muted font-light text-[0.95rem]">Stok, finans ve üretim verisi tek bir merkezde konuşur. Birim maliyetiniz ile kasa durumunuz birbiriyle çelişmez.</p>
                         </div>
                     </div>
 
-                    <div style={{display:'flex', gap:'1rem'}}>
-                        <TrendingUp className="feature-icon" size={24} />
+                    <div className="flex items-start gap-6">
+                        <div className="p-3 bg-white border border-border-gray rounded-sm shadow-sm shrink-0">
+                          <TrendingUp className="text-dark" size={24} aria-hidden="true" />
+                        </div>
                         <div>
-                            <h4 style={{fontSize:'1.1rem', marginBottom:'0.5rem'}}>Görünür Kârlılık</h4>
-                            <p style={{fontSize:'0.9rem', color:'var(--text-muted)'}}>Ay sonunda "neden kasada para yok" demek yerine, hangi ürünün size kaybettirdiğini anlık olarak görürsünüz.</p>
+                            <h4 className="text-xl font-medium tracking-tight mb-2">Görünür Kârlılık</h4>
+                            <p className="text-muted font-light text-[0.95rem]">Ay sonunda "neden kasada para yok" demek yerine, hangi ürünün size kaybettirdiğini anlık olarak görürsünüz.</p>
                         </div>
                     </div>
                 </div>
                 
-                <div>
-                    <ul style={{display: 'flex', flexDirection: 'column', gap: '1rem', background:'white', padding:'2rem', borderRadius:'var(--radius)', border:'1px solid var(--border)'}}>
-                        <h3 style={{fontSize:'1.2rem', marginBottom:'0.5rem'}}>Opsiron Farkı</h3>
-                        {[
-                            "Sahada personeli yormayan arayüzler",
-                            "Ürün altyapısı üzerine terzi işi kurulum",
-                            "Operasyonel yükü azaltan otomasyonlar",
-                            "Sadece veri giren değil, karar aldıran sistem",
-                            "İşletmeyle birlikte büyüyen modüler yapı"
-                        ].map((item, index) => (
-                            <li key={index} style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                                <div style={{background: 'var(--bg-page)', padding: '0.4rem', borderRadius: '50%', display:'flex'}}>
-                                    <Check size={16} color="var(--text-main)" />
+                {/* Sağ: Opsiron Farkı Listesi */}
+                <Card variant="default" className="p-10 border border-border-gray shadow-xl">
+                    <h3 className="text-2xl font-medium tracking-tight mb-8">Opsiron Farkı</h3>
+                    <ul className="space-y-5">
+                        {OPSIRON_DIFFERENCE.map((item, index) => (
+                            <li key={index} className="flex items-start gap-4">
+                                <div className="mt-1 bg-dark text-white p-0.5 rounded-full flex items-center justify-center shrink-0">
+                                    <Check size={14} aria-hidden="true" />
                                 </div>
-                                <span style={{fontWeight: 500, fontSize:'0.95rem'}}>{item}</span>
+                                <span className="text-dark font-light text-[0.95rem] leading-snug">{item}</span>
                             </li>
                         ))}
                     </ul>
-                </div>
+                </Card>
             </div>
         </div>
       </section>
 
-      {/* Nasıl Çalışırız */}
-      <section className="section">
-        <div className="container">
-            <div className="section-header" style={{textAlign: 'center', margin: '0 auto 3rem auto'}}>
-                <h2>Çalışma Modelimiz</h2>
-                <p>Ürünlerimizi "indir ve kullan" şeklinde değil, bir çözüm ortaklığı süreciyle sunarız.</p>
+      {/* 5. NASIL ÇALIŞIRIZ (Process - Boxes) */}
+      <section className="py-24 border-b border-border-gray">
+        <div className="container mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+                <h2 className="text-3xl md:text-4xl font-light tracking-tighter mb-4">Çalışma Modelimiz</h2>
+                <p className="text-muted font-light leading-relaxed">Ürünlerimizi "indir ve kullan" şeklinde değil, bir çözüm ortaklığı süreciyle sunarız.</p>
             </div>
-            <div className="grid-3">
-                <div className="card">
-                    <div style={{fontSize: '2rem', fontWeight: 300, marginBottom: '1rem', color: 'var(--text-light)'}}>01</div>
-                    <h3>Süreç Analizi</h3>
-                    <p style={{fontSize: '0.95rem'}}>İşletmenizi ziyaret ediyor veya online toplantı ile operasyonunuzu, stok mantığınızı ve finans döngünüze hakim oluyoruz.</p>
-                </div>
-                <div className="card">
-                    <div style={{fontSize: '2rem', fontWeight: 300, marginBottom: '1rem', color: 'var(--text-light)'}}>02</div>
-                    <h3>Kapsam Belirleme</h3>
-                    <p style={{fontSize: '0.95rem'}}>Sadece stok mu, sadece finansal takip mi, yoksa tam entegrasyon mu? CraftOps veya ServeOps modüllerinden hangilerine ihtiyacınız olduğunu seçiyoruz.</p>
-                </div>
-                <div className="card">
-                    <div style={{fontSize: '2rem', fontWeight: 300, marginBottom: '1rem', color: 'var(--text-light)'}}>03</div>
-                    <h3>Konfigürasyon</h3>
-                    <p style={{fontSize: '0.95rem'}}>Sıfırdan yazmıyoruz, ayarlıyoruz. Alanlar, raporlar ve akışlar işletmenizin diline göre uyarlanıyor.</p>
-                </div>
-                <div className="card">
-                    <div style={{fontSize: '2rem', fontWeight: 300, marginBottom: '1rem', color: 'var(--text-light)'}}>04</div>
-                    <h3>Devreye Alma & Eğitim</h3>
-                    <p style={{fontSize: '0.95rem'}}>Geçmiş verilerinizi aktarıyor, ekibinize pratik kullanım eğitimi veriyor ve sistemi "canlı"ya alıyoruz.</p>
-                </div>
-                <div className="card">
-                    <div style={{fontSize: '2rem', fontWeight: 300, marginBottom: '1rem', color: 'var(--text-light)'}}>05</div>
-                    <h3>Pilot Kullanım</h3>
-                    <p style={{fontSize: '0.95rem'}}>İlk haftalarda yanınızdayız. Gerçek saha kullanımında ortaya çıkan ihtiyaçlara göre ince ayarlar yapıyoruz.</p>
-                </div>
-                <div className="card">
-                    <div style={{fontSize: '2rem', fontWeight: 300, marginBottom: '1rem', color: 'var(--text-light)'}}>06</div>
-                    <h3>Süreklilik</h3>
-                    <p style={{fontSize: '0.95rem'}}>Abonelik modeliyle düzenli güncellemeler, veri güvenliği ve teknik destek hizmetimiz devam ediyor.</p>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Hizmet ve Fiyatlandırma Modeli */}
-      <section className="section" style={{background: 'var(--bg-secondary, #f8f9fa)'}}>
-        <div className="container">
-            <div className="grid-2">
-                <div>
-                    <Layers size={32} style={{marginBottom: '1.5rem', opacity: 0.5}} />
-                    <h2>Hizmet Yapısı</h2>
-                    <p>Opsiron iş birliği iki temel bileşenden oluşur: <strong>Kurulum</strong> ve <strong>Abonelik</strong>.</p>
-                    <div style={{marginTop: '2rem'}}>
-                        <div style={{marginBottom: '1.5rem'}}>
-                            <h3 style={{fontSize: '1.1rem', marginBottom: '0.5rem'}}>1. Kurulum (Onboarding)</h3>
-                            <p style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}>
-                                Sistemin işletmenize özel hale getirilmesi, veri aktarımı ve eğitim sürecini kapsayan tek seferlik proje bedelidir.
-                            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {WORKING_MODEL.map((step, index) => (
+                    <Card 
+                      key={index} 
+                      variant="default" 
+                      className="text-center p-10 border border-border-gray hover:border-dark transition-all group"
+                    >
+                        <div className="text-5xl font-extralight text-light mb-6 group-hover:text-dark transition-colors" aria-hidden="true">
+                            {step.step}
                         </div>
-                        
-                        <div>
-                            <h3 style={{fontSize: '1.1rem', marginBottom: '0.5rem'}}>2. Yazılım Aboneliği</h3>
-                            <p style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}>
-                                Kurulum tamamlandıktan sonra; sistemin sunucularımızda barınması, güvenliği ve sürekli gelişimi için aylık hizmet bedeli uygulanır.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div className="card" style={{background: 'var(--bg-page)', border: '2px solid var(--border)'}}>
-                    <Settings size={28} style={{marginBottom: '1rem', opacity: 0.5}} />
-                    <h3>Abonelik Neleri Kapsar?</h3>
-                    <p style={{fontSize: '0.9rem', marginBottom:'1.5rem'}}>Yazılımı satın alıp yalnız kalmazsınız. Aboneliğiniz, işleyen bir teknoloji departmanı kiralamak gibidir.</p>
-                    
-                    <ul style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
-                        {[
-                            'Sunucu maliyetleri ve veri yedekleme',
-                            'SSL sertifikası ve güvenlik güncellemeleri',
-                            'Yeni özellikler ve versiyon yükseltmeleri',
-                            'Öncelikli teknik destek kanalı',
-                            'Hata düzeltmeleri ve bakım',
-                        ].map((item, index) => (
-                            <li key={index} style={{display: 'flex', gap: '0.8rem', fontSize: '0.9rem', alignItems: 'flex-start'}}>
-                                <Check size={16} style={{marginTop: '2px', flexShrink: 0}} />
-                                <span>{item}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Amacımız Bölümü */}
-      <section className="section">
-        <div className="container">
-            <div className="section-header">
-                <h2>Nihai Hedefimiz</h2>
-                <p>İşletmeleri "sezgisel" yönetimden, "verisel" yönetime taşımak.</p>
-            </div>
-            <div className="grid-2">
-                {[
-                    "Operasyonel karmaşayı %80 oranında azaltmak",
-                    "Stok kaçaklarını ve görünmez maliyetleri sıfırlamak",
-                    "İşletme sahibine 'sürprizsiz' bir finansal tablo sunmak",
-                    "Teknolojiyle büyüyen, sürdürülebilir işletmeler yaratmak"
-                ].map((item, index) => (
-                    <div className="card" key={index} style={{display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.5rem'}}>
-                        <Target size={20} style={{flexShrink: 0, opacity: 0.7}} />
-                        <h4 style={{marginBottom: 0, fontSize: '1rem', fontWeight: 500}}>{item}</h4>
-                    </div>
+                        <h3 className="text-xl font-medium tracking-tight mb-4">{step.title}</h3>
+                        <p className="text-muted font-light text-[0.95rem] leading-relaxed">{step.description}</p>
+                    </Card>
                 ))}
             </div>
         </div>
       </section>
 
-      {/* Alt CTA */}
-      <section className="final-cta">
-        <div className="container">
-            <h2>İşletmenize uygun çözümü birlikte kuralım.</h2>
-            <p style={{marginBottom: '2rem'}}>
-                İhtiyaç analizi için görüşelim. CraftOps veya ServeOps'un işletmenize neler katabileceğini konuşalım.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Link to="/contact" className="btn btn-white">İletişime Geçin</Link>
-                <Link to="/pricing" className="btn btn-outline" style={{borderColor: 'rgba(255,255,255,0.3)', color: 'white'}}>Fiyatlandırmayı İncele</Link>
+  
+
+      {/* 7. NİHAİ HEDEF */}
+      <section className="py-24 border-b border-border-gray">
+        <div className="container mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+                <h2 className="text-3xl md:text-4xl font-light tracking-tighter mb-4">Nihai Hedefimiz</h2>
+                <p className="text-muted font-light">İşletmeleri "sezgisel" yönetimden, "verisel" yönetime taşımak.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {COMPANY_GOALS.map((goal, index) => (
+                    <Card key={index} className="flex items-center gap-4 p-6 border border-border-gray hover:bg-page transition-colors">
+                        <Target size={24} className="text-dark opacity-40 shrink-0" aria-hidden="true" />
+                        <h4 className="text-[0.95rem] font-medium tracking-tight leading-snug">{goal}</h4>
+                    </Card>
+                ))}
+            </div>
+        </div>
+      </section>
+
+      {/* 8. CTA */}
+      <section className="bg-dark py-24 text-center">
+        <div className="container mx-auto px-6">
+            <h2 className="text-3xl md:text-5xl font-light text-white mb-6 tracking-tighter">{CTA_MESSAGES.about.title}</h2>
+            <p className="text-white/70 font-light mb-12 max-w-2xl mx-auto text-lg leading-relaxed">{CTA_MESSAGES.about.subtitle}</p>
+            <div className="flex justify-center gap-6 flex-wrap">
+                <Button to="/contact" variant="white" size="lg" icon={ArrowRight} iconPosition="right">
+                    İletişime Geçin
+                </Button>
+                <Button to="/pricing" variant="outline" size="lg" className="border-white/20 text-white hover:bg-white hover:text-dark">
+                    Fiyatlandırmayı İncele
+                </Button>
             </div>
         </div>
       </section>
