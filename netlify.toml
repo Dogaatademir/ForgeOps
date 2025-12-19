@@ -11,6 +11,11 @@
   to = "/craftops/editioncoffeeroastery/index.html"
   status = 200
 
+  [[redirects]]
+  from = "/craftops/aycaninsaat/*"
+  to = "/craftops/aycaninsaat/index.html"
+  status = 200
+
 # 2. KURAL: Ana Uygulama Yönlendirmesi
 [[redirects]]
   from = "/*"

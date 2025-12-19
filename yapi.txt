@@ -84,9 +84,12 @@ opsiron-monorepo
 │       │   │   ├── Contact.jsx
 │       │   │   ├── CraftOps.jsx
 │       │   │   ├── Home.jsx
+│       │   │   ├── KVKK.jsx
 │       │   │   ├── NotFound.jsx
 │       │   │   ├── Pricing.jsx
-│       │   │   └── ServeOps.jsx
+│       │   │   ├── Privacy.jsx
+│       │   │   ├── ServeOps.jsx
+│       │   │   └── Terms.jsx
 │       │   ├── services
 │       │   │   └── api.js
 │       │   └── utils
@@ -97,26 +100,35 @@ opsiron-monorepo
 │   ├── OpsironLogo-v2.png
 │   ├── OpsironLogo.png
 │   ├── assets
-│   │   ├── About-DA4mEsR8.js
-│   │   ├── Card-dy7gqg9d.js
-│   │   ├── Contact-Cl4taraq.js
-│   │   ├── CraftOps-C8xrI7oU.js
-│   │   ├── Home-u4yBXhGV.js
-│   │   ├── NotFound-QJZ4MXWR.js
-│   │   ├── Pricing-DMxTthLf.js
-│   │   ├── ServeOps-rp8J7osG.js
-│   │   ├── arrow-right-I6HjshwD.js
-│   │   ├── check-CtPgYo_b.js
-│   │   ├── circle-alert-DJ_CyaYz.js
-│   │   ├── clock-YWoVQ6uc.js
-│   │   ├── index-BOxRD7Hg.js
-│   │   ├── index-VrFdrhvS.css
-│   │   ├── layers-Cr_5p6P1.js
+│   │   ├── About-BZODZOZM.js
+│   │   ├── Card-DVevhkEI.js
+│   │   ├── Contact-E1NfOuu0.js
+│   │   ├── CraftOps-DyQPJDPf.js
+│   │   ├── Home-KLSob11U.js
+│   │   ├── KVKK-CkyH7Mic.js
+│   │   ├── NotFound-4uS6fO_f.js
+│   │   ├── Pricing-DLn9Z0Y3.js
+│   │   ├── Privacy-sEQSk0ut.js
+│   │   ├── ServeOps-6avGJg32.js
+│   │   ├── Terms-vdpvT7s9.js
+│   │   ├── arrow-right-CUCnlxgR.js
+│   │   ├── check-3TzZUo39.js
+│   │   ├── circle-alert-BLsFrquX.js
+│   │   ├── clock-BlfurOO4.js
+│   │   ├── index-Ct1mdqkG.js
+│   │   ├── index-DBvRyuVh.css
 │   │   ├── opsiron-CXJpZ2_G.png
-│   │   ├── package-BmwKFCDN.js
-│   │   ├── shield-check-BDr_KpR2.js
-│   │   ├── trending-up-CrG7ZmMN.js
-│   │   └── validation-Dnjy6CXw.js
+│   │   ├── package-CHZJ2AqM.js
+│   │   ├── shield-check-Eb5mTSDa.js
+│   │   ├── trending-up-A5rlQ2MH.js
+│   │   └── validation-RI7igykx.js
+│   ├── craftops
+│   │   └── editioncoffeeroastery
+│   │       ├── ForgeOpsLogo.jpg
+│   │       ├── assets
+│   │       │   ├── index-C17XloxR.css
+│   │       │   └── index-CDW60ki8.js
+│   │       └── index.html
 │   ├── index.html
 │   └── opsiron.png
 ├── netlify.toml
