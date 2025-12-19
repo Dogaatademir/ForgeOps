@@ -2,14 +2,16 @@
   command = "npm run install:all && npm run build:all"
   publish = "dist"
 
-# 1. KURAL: Alt Uygulama (Bunu Kesinleştiriyoruz)
+# 1. KURAL: Alt Uygulama Yönlendirmesi
+# force = true satırını KALDIRDIK.
+# Böylece var olan JS/CSS dosyalarını olduğu gibi sunacak, 
+# sadece bulunamayan sayfaları index.html'e yönlendirecek.
 [[redirects]]
   from = "/craftops/editioncoffeeroastery/*"
   to = "/craftops/editioncoffeeroastery/index.html"
   status = 200
-  force = true  # <--- BU SATIR KRİTİK!
 
-# 2. KURAL: Ana Uygulama
+# 2. KURAL: Ana Uygulama Yönlendirmesi
 [[redirects]]
   from = "/*"
   to = "/index.html"
