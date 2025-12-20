@@ -6,9 +6,8 @@ import {
   CalendarClock,
 
 } from "lucide-react";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 
-// Para formatı yardımcısı
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
@@ -21,20 +20,19 @@ const formatCurrency = (amount: number) => {
 export default function BorcAlacakPage() {
   const { islemler, kisiler } = useData();
 
-  // --- GELİŞMİŞ HESAPLAMA MANTIĞI ---
   const report = useMemo(() => {
-    // 1. Her kişinin bakiyesini hesapla
     const kisiBakiyeleri = kisiler.map(kisi => {
-      // Kişiye ait işlemleri bul
       const personTransactions = islemler.filter(t => t.kisi_id === kisi.id);
 
-      // Toplamları Hesapla
+      // Toplam Planlanan Borç
       const topOdenecek = personTransactions
         .filter(t => t.tip === 'odenecek')
         .reduce((sum, t) => sum + t.tutar, 0);
 
+      // Toplam Ödenen (Nakit + Verilen Çekler)
+      // Çek verildiği anda borçtan düşer.
       const topOdeme = personTransactions
-        .filter(t => t.tip === 'odeme')
+        .filter(t => t.tip === 'odeme' || t.tip === 'cek')
         .reduce((sum, t) => sum + t.tutar, 0);
 
       const topAlacak = personTransactions
@@ -45,15 +43,9 @@ export default function BorcAlacakPage() {
         .filter(t => t.tip === 'tahsilat')
         .reduce((sum, t) => sum + t.tutar, 0);
 
-      // Kritik Hesaplama: Kalan Bakiye
-      // Eğer avans aldıysak (Tahsilat > Alacak), bu "Alacak" listesinde negatif görünmemeli (gizlenmeli).
-      // Eğer fazla ödeme yaptıysak (Odeme > Odenecek), bu "Borç" listesinde görünmemeli.
-      
       const kalanBorc = Math.max(0, topOdenecek - topOdeme);
       const kalanAlacak = Math.max(0, topAlacak - topTahsilat);
 
-      // En yakın vade tarihini bul (Sadece kapanmamış işlemler için)
-      // Bu basit bir yaklaşım: İlgili tipteki en son tarihi alıyoruz.
       const dates = personTransactions
         .filter(t => (t.tip === 'odenecek' || t.tip === 'alacak') && t.tarih)
         .map(t => t.tarih as string)
@@ -73,16 +65,14 @@ export default function BorcAlacakPage() {
       };
     });
 
-    // 2. Listeleri Oluştur (Sadece bakiyesi olanları filtrele)
     const borcluListesi = kisiBakiyeleri
       .filter(k => k.kalanBorc > 0)
-      .sort((a, b) => b.kalanBorc - a.kalanBorc); // En yüksek borç en üstte
+      .sort((a, b) => b.kalanBorc - a.kalanBorc);
 
     const alacakliListesi = kisiBakiyeleri
       .filter(k => k.kalanAlacak > 0)
-      .sort((a, b) => b.kalanAlacak - a.kalanAlacak); // En yüksek alacak en üstte
+      .sort((a, b) => b.kalanAlacak - a.kalanAlacak);
 
-    // 3. Genel Toplamlar
     const totalKalanBorc = borcluListesi.reduce((sum, k) => sum + k.kalanBorc, 0);
     const totalKalanAlacak = alacakliListesi.reduce((sum, k) => sum + k.kalanAlacak, 0);
 
@@ -159,7 +149,6 @@ export default function BorcAlacakPage() {
                         </div>
                       </td>
                       <td className="px-5 py-4 text-center">
-                         {/* Progress Bar benzeri gösterim */}
                          <div className="flex flex-col items-center justify-center gap-1">
                             <div className="text-[10px] text-neutral-400">
                                 {formatCurrency(row.topTahsilat)} / {formatCurrency(row.topAlacak)}

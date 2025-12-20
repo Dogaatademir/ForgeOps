@@ -9,10 +9,9 @@ import {
   Briefcase, 
   Building2 
 } from "lucide-react";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 import { Link } from "react-router-dom";
 
-// --- YARDIMCI FORMAT FONKSİYONU ---
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
@@ -25,35 +24,36 @@ const formatCurrency = (amount: number) => {
 export default function OverviewPage() {
   const { islemler, kisiler } = useData();
 
-  // --- HESAPLAMALAR ---
   const stats = useMemo(() => {
     // 1. GERÇEKLEŞEN NAKİT AKIŞI (Kasa Durumu)
-    // Burası "ne kadar para girdi/çıktı" olduğu için düz toplam alınır.
+    // Tahsilat: Kasaya giren para
     const tahsilat = islemler
       .filter((i) => i.tip === "tahsilat")
       .reduce((acc, curr) => acc + curr.tutar, 0);
 
+    // Ödeme: Kasadan çıkan para (Normal ödemeler + Günü gelmiş ve ÖDENDİ işaretlenmiş çekler)
     const odeme = islemler
-      .filter((i) => i.tip === "odeme")
+      .filter((i) => i.tip === "odeme" || (i.tip === "cek" && i.is_bitiminde === 1))
       .reduce((acc, curr) => acc + curr.tutar, 0);
 
     const netDurum = tahsilat - odeme;
 
     // 2. BEKLEYEN BAKİYELER (Cari Hesap Mantığı)
-    // Burası "ne kadar alacağım/borcum var" olduğu için Kişi bazlı netleme yapılır.
-    
     let totalKalanBorc = 0;
     let totalKalanAlacak = 0;
 
     kisiler.forEach((kisi) => {
       const kisiIslemleri = islemler.filter((t) => t.kisi_id === kisi.id);
 
-      // Borç Hesabı
+      // Borç Hesabı (Planlanan Ödemeler)
       const topOdenecek = kisiIslemleri
         .filter((t) => t.tip === "odenecek")
         .reduce((sum, t) => sum + t.tutar, 0);
+      
+      // Yapılan Ödeme (Nakit Ödemeler + Verilen Çekler)
+      // Çeki verdiğimiz an, cari hesaptan borç düşmelidir. Kasadan çıkıp çıkmaması önemli değil.
       const topOdeme = kisiIslemleri
-        .filter((t) => t.tip === "odeme")
+        .filter((t) => t.tip === "odeme" || t.tip === "cek")
         .reduce((sum, t) => sum + t.tutar, 0);
       
       // Alacak Hesabı
@@ -64,7 +64,6 @@ export default function OverviewPage() {
         .filter((t) => t.tip === "tahsilat")
         .reduce((sum, t) => sum + t.tutar, 0);
 
-      // Negatif bakiye kontrolü (Ödenmiş borç 0 sayılır, Avans alacak sayılmaz)
       totalKalanBorc += Math.max(0, topOdenecek - topOdeme);
       totalKalanAlacak += Math.max(0, topAlacak - topTahsilat);
     });
@@ -85,7 +84,6 @@ export default function OverviewPage() {
       .slice(0, 5);
   }, [islemler]);
 
-  // Kişi İstatistikleri
   const kisiStats = useMemo(() => {
     return {
       toplam: kisiler.length,
@@ -157,7 +155,7 @@ export default function OverviewPage() {
               <div className="text-2xl font-light text-neutral-900">
                 {formatCurrency(stats.odeme)}
               </div>
-              <p className="text-xs text-neutral-400 mt-2 font-light">Toplam yapılan ödeme</p>
+              <p className="text-xs text-neutral-400 mt-2 font-light">Nakit + Ödenen Çekler</p>
             </div>
           </div>
 
@@ -182,7 +180,7 @@ export default function OverviewPage() {
         {/* --- 2. ALT BÖLÜM (Grid Split) --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* SOL: SON İŞLEMLER TABLOSU (2 birim genişlik) */}
+          {/* SOL: SON İŞLEMLER TABLOSU */}
           <div className="lg:col-span-2 bg-white border border-neutral-200 shadow-sm">
             <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="text-lg font-light text-neutral-900">Son Hareketler</h2>
@@ -203,10 +201,15 @@ export default function OverviewPage() {
                   {sonIslemler.map((islem) => (
                     <tr key={islem.id} className="hover:bg-neutral-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-neutral-600 font-light whitespace-nowrap">
-                        {islem.is_bitiminde ? (
-                          <span className="text-[10px] bg-neutral-100 px-2 py-1 rounded border border-neutral-200">VADELİ</span>
+                        {islem.tip === 'cek' ? (
+                          <div className="flex flex-col">
+                             <span>{islem.tarih ? islem.tarih.split('-').reverse().join('.') : '-'}</span>
+                             <span className={`text-[9px] px-1.5 py-0.5 rounded w-fit mt-1 ${islem.is_bitiminde ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                               {islem.is_bitiminde ? 'ÇEK ÖDENDİ' : 'ÇEK BEKLİYOR'}
+                             </span>
+                          </div>
                         ) : (
-                          islem.tarih ? islem.tarih.split('-').reverse().join('.') : '-'
+                          islem.tarih ? islem.tarih.split('-').reverse().join('.') : (islem.is_bitiminde ? 'İŞ BİTİMİ' : '-')
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-neutral-800 font-light truncate max-w-xs">
@@ -218,10 +221,10 @@ export default function OverviewPage() {
                       <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                         <span className={
                           islem.tip === 'tahsilat' ? 'text-green-600' :
-                          islem.tip === 'odeme' ? 'text-red-600' :
+                          (islem.tip === 'odeme' || islem.tip === 'cek') ? 'text-red-600' :
                           'text-neutral-600'
                         }>
-                          {islem.tip === 'odeme' ? '-' : islem.tip === 'tahsilat' ? '+' : ''}
+                          {(islem.tip === 'odeme' || islem.tip === 'cek') ? '-' : islem.tip === 'tahsilat' ? '+' : ''}
                           {formatCurrency(islem.tutar)}
                         </span>
                       </td>
@@ -235,16 +238,12 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          {/* SAĞ: ÖZET BİLGİLER (1 birim genişlik) */}
+          {/* SAĞ: ÖZET BİLGİLER */}
           <div className="space-y-6">
-            
-            {/* Kişi İstatistikleri Kartı */}
             <div className="bg-neutral-900 text-white p-6 shadow-lg relative overflow-hidden">
-               {/* Dekoratif Arkaplan */}
                <div className="absolute -right-6 -top-6 text-neutral-800 opacity-20">
                  <Users size={140} />
                </div>
-
                <h3 className="text-lg font-light mb-6 relative z-10">Kişi & Kurumlar</h3>
                <div className="space-y-4 relative z-10">
                   <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
@@ -271,7 +270,6 @@ export default function OverviewPage() {
                </div>
             </div>
 
-            {/* Hızlı Alacak Durumu */}
             <div className="bg-white border border-neutral-200 p-6 shadow-sm">
               <h3 className="text-sm font-bold text-neutral-400 tracking-wider uppercase mb-2">BEKLENEN ALACAKLAR</h3>
               <div className="text-3xl font-light text-neutral-800 mb-1">

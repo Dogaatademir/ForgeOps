@@ -1,8 +1,7 @@
-import  { useMemo, useState } from "react";
-import { ArrowRightLeft, Calendar, CreditCard, User, FileText, Check, X, AlertTriangle, Save } from "lucide-react";
-import { CustomSelect } from "./CustomSelect";
-// HATA 1 DÜZELTİLDİ: 'type Islem' olarak import edildi
-import { useData, type Islem } from "./DataContext";
+import { useMemo, useState } from "react";
+import { ArrowRightLeft, Calendar, CreditCard, User, FileText, Check, X, AlertTriangle, Save, RefreshCw } from "lucide-react";
+import { CustomSelect } from "../components/CustomSelect";
+import { useData, type Islem } from "../context/DataContext";
 
 // --- YARDIMCI FONKSİYONLAR ---
 const toAmount = (val: any) =>
@@ -21,9 +20,11 @@ const formatDateDisplay = (dateStr: string | null) => {
   return `${parts[2]}.${parts[1]}.${parts[0]}`;
 };
 
+// Form Seçenekleri
 const ISLEM_TIP_OPTIONS = [
   { value: "tahsilat", label: "Tahsilat (+)" },
   { value: "odeme", label: "Ödeme (-)" },
+  { value: "cek", label: "Çek Çıkışı (Vadeli)" },
   { value: "odenecek", label: "Ödenecek (Borç)" },
   { value: "alacak", label: "Alacak" },
 ];
@@ -61,30 +62,37 @@ export default function IslemlerDemo() {
     return 1;
   };
 
-  // --- KAYIT EKLEME (CREATE) ---
-  const saveCreate = () => {
-    if (!form.kisi_id || !form.tip || !form.tutar) return alert("Eksik bilgi");
-    
-    const amountRaw = toAmount(form.tutar);
-    const amountTL = amountRaw * getExchangeRate(form.doviz);
+  // --- KAYIT EKLEME ---
+  const saveCreate = async () => {
+    try {
+      if (!form.kisi_id || !form.tip || !form.tutar) return alert("Eksik bilgi: Kişi, Tip ve Tutar zorunludur.");
+      
+      const amountRaw = toAmount(form.tutar);
+      const amountTL = amountRaw * getExchangeRate(form.doviz);
 
-    const newRow: Islem = {
-      id: Math.random().toString(),
-      tarih: form.is_bitiminde ? null : form.tarih,
-      tutar: amountTL,
-      tutar_raw: amountRaw,
-      tip: form.tip,
-      is_bitiminde: form.is_bitiminde ? 1 : 0,
-      kisi_id: form.kisi_id,
-      aciklama: form.aciklama,
-      doviz: form.doviz as any,
-    };
+      if (form.tip === "cek" && !form.tarih) return alert("Çek işlemlerinde Vade Tarihi zorunludur.");
 
-    addIslem(newRow);
-    setForm(INITIAL_FORM);
+      const newRow: Islem = {
+        id: crypto.randomUUID(), 
+        tarih: form.is_bitiminde && form.tip !== 'cek' ? null : form.tarih,
+        tutar: amountTL,
+        tutar_raw: amountRaw,
+        tip: form.tip,
+        is_bitiminde: form.tip === 'cek' ? 0 : (form.is_bitiminde ? 1 : 0),
+        kisi_id: form.kisi_id,
+        aciklama: form.aciklama,
+        doviz: form.doviz as any,
+      };
+
+      await addIslem(newRow);
+      setForm(INITIAL_FORM);
+    } catch (error) {
+      console.error("Kayıt hatası:", error);
+      alert("İşlem kaydedilirken bir hata oluştu.");
+    }
   };
 
-  // --- DÜZENLEME BAŞLATMA ---
+  // --- DÜZENLEME ---
   const startEdit = (r: Islem) => {
     setEditForm({
       ...r,
@@ -94,42 +102,93 @@ export default function IslemlerDemo() {
     });
   };
 
-  // --- DÜZENLEME KAYDETME (UPDATE) ---
-  const saveEdit = () => {
-    if (!editForm) return;
-    if (!editForm.kisi_id || !editForm.tip || !editForm.tutar) return alert("Eksik bilgi");
+  const saveEdit = async () => {
+    try {
+      if (!editForm) return;
+      if (!editForm.kisi_id || !editForm.tip || !editForm.tutar) return alert("Eksik bilgi");
 
-    const amountRaw = toAmount(editForm.tutar);
-    const amountTL = amountRaw * getExchangeRate(editForm.doviz);
+      const amountRaw = toAmount(editForm.tutar);
+      const amountTL = amountRaw * getExchangeRate(editForm.doviz);
 
-    const updatedRow: Islem = {
-      id: editForm.id,
-      tarih: editForm.is_bitiminde ? null : editForm.tarih,
-      tutar: amountTL,
-      tutar_raw: amountRaw,
-      tip: editForm.tip,
-      is_bitiminde: editForm.is_bitiminde ? 1 : 0,
-      kisi_id: editForm.kisi_id,
-      aciklama: editForm.aciklama,
-      doviz: editForm.doviz,
-    };
+      const updatedRow: Islem = {
+        id: editForm.id,
+        tarih: editForm.is_bitiminde && editForm.tip !== 'cek' ? null : editForm.tarih,
+        tutar: amountTL,
+        tutar_raw: amountRaw,
+        tip: editForm.tip,
+        is_bitiminde: editForm.tip === 'cek' ? editForm.is_bitiminde : (editForm.is_bitiminde ? 1 : 0),
+        kisi_id: editForm.kisi_id,
+        aciklama: editForm.aciklama,
+        doviz: editForm.doviz,
+      };
 
-    updateIslem(updatedRow);
-    setEditForm(null);
+      await updateIslem(updatedRow);
+      setEditForm(null);
+    } catch (error) {
+      console.error("Güncelleme hatası:", error);
+      alert("Güncelleme sırasında hata oluştu.");
+    }
   };
 
+  // --- SİLME ---
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await removeIslem(deleteId);
+      setDeleteId(null);
+    } catch (error) {
+      console.error("Silme hatası:", error);
+      alert("Silme işlemi başarısız.");
+    }
+  };
+
+  // --- ÇEK DURUMU ---
+  const toggleCheckStatus = async (r: Islem) => {
+    const newStatus = r.is_bitiminde === 1 ? 0 : 1;
+    const confirmMsg = newStatus === 1 
+      ? "Bu çeki ÖDENDİ olarak işaretlemek istiyor musunuz? (Kasadan para çıkışı yapılacak)"
+      : "Bu çeki BEKLİYOR durumuna almak istiyor musunuz?";
+      
+    if (confirm(confirmMsg)) {
+      try {
+        await updateIslem({ ...r, is_bitiminde: newStatus });
+      } catch (error) {
+        console.error("Çek durumu güncelleme hatası:", error);
+      }
+    }
+  };
+
+  // --- FİLTRELEME ---
   const filtered = useMemo(
     () =>
-      islemler.filter((r) =>
-        JSON.stringify(r).toLowerCase().includes(query.toLowerCase())
-      ),
+      islemler
+        .filter((r) =>
+          JSON.stringify(r).toLowerCase().includes(query.toLowerCase())
+        )
+        .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "")),
     [islemler, query]
   );
 
+  // --- KİŞİ LİSTESİ (ALFABETİK SIRALI) ---
   const kisiOptions = useMemo(
-    () => kisiler.map((k) => ({ value: k.id, label: k.ad })),
+    () => 
+      kisiler
+        .map((k) => ({ value: k.id, label: k.ad }))
+        .sort((a, b) => a.label.localeCompare(b.label, "tr")), // Türkçe A-Z Sıralama
     [kisiler]
   );
+
+  // --- TİP ETİKET METNİ (TÜRKÇE) ---
+  const getTypeLabel = (tip: string, is_bitiminde: any) => {
+    switch (tip) {
+      case 'tahsilat': return "TAHSİLAT";
+      case 'odeme': return "ÖDEME";
+      case 'odenecek': return "ÖDENECEK";
+      case 'alacak': return "ALACAK";
+      case 'cek': return is_bitiminde === 1 ? "ÇEK (ÖDENDİ)" : "ÇEK (VADELİ)";
+      default: return tip.toUpperCase();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-20">
@@ -142,7 +201,7 @@ export default function IslemlerDemo() {
                 İŞLEMLER
               </h1>
              <p className="text-neutral-500 mt-1 font-light">
-                Gelir / Gider Yönetimi
+                Gelir / Gider / Çek Yönetimi
              </p>
             </div>
             <div className="w-16 h-16 rounded-full bg-neutral-900 flex items-center justify-center">
@@ -153,7 +212,7 @@ export default function IslemlerDemo() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* CREATE FORM KARTI */}
+        {/* CREATE FORM */}
         <div className="bg-white p-8 border border-neutral-200 mb-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center">
@@ -165,18 +224,19 @@ export default function IslemlerDemo() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-             {/* 1. Satır: Tarih & Tip */}
              <div className="md:col-span-3">
-              <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">TARİH</label>
+              <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">
+                {form.tip === 'cek' ? 'ÇEK VADESİ' : 'TARİH'}
+              </label>
               <div className="relative">
                 <input
                   type="date"
                   className="w-full h-14 px-4 bg-white border border-neutral-300 text-neutral-900 outline-none focus:border-neutral-900 font-light disabled:bg-neutral-100 disabled:text-neutral-400 transition-colors"
                   value={form.tarih}
                   onChange={(e) => setForm({ ...form, tarih: e.target.value })}
-                  disabled={form.is_bitiminde}
+                  disabled={form.is_bitiminde && form.tip !== 'cek'}
                 />
-                 {!form.tarih && !form.is_bitiminde && (
+                 {(!form.tarih && !form.is_bitiminde) && (
                   <Calendar className="absolute right-4 top-4 text-neutral-400 pointer-events-none" size={20} />
                 )}
               </div>
@@ -186,7 +246,7 @@ export default function IslemlerDemo() {
                <CustomSelect
                 label="İŞLEM TİPİ"
                 value={form.tip}
-                onChange={(val) => setForm({ ...form, tip: val })}
+                onChange={(val) => setForm({ ...form, tip: val, is_bitiminde: false })}
                 options={ISLEM_TIP_OPTIONS}
                 placeholder="Seçiniz"
                 icon={CreditCard}
@@ -202,7 +262,6 @@ export default function IslemlerDemo() {
               )}
             </div>
 
-             {/* 2. Satır: Tutar & Döviz */}
              <div className="md:col-span-3 flex gap-3">
               <div className="flex-1">
                  <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">TUTAR</label>
@@ -223,7 +282,6 @@ export default function IslemlerDemo() {
               <CustomSelect label="KİŞİ" value={form.kisi_id} onChange={(val) => setForm({ ...form, kisi_id: val })} options={kisiOptions} placeholder="Seçiniz" icon={User} />
             </div>
 
-            {/* 3. Satır: Açıklama & Buton */}
             <div className="md:col-span-9">
               <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">AÇIKLAMA</label>
               <input
@@ -269,10 +327,12 @@ export default function IslemlerDemo() {
                      {filtered.map((r) => (
                         <tr key={r.id} className="hover:bg-neutral-50 group transition-colors">
                            <td className="px-6 py-5 font-light text-neutral-600 whitespace-nowrap">
-                              {r.is_bitiminde ? "—" : formatDateDisplay(r.tarih)}
+                              {r.is_bitiminde && r.tip !== 'cek' ? "—" : formatDateDisplay(r.tarih)}
                            </td>
-                           <td className="px-6 py-5 capitalize font-light text-neutral-900 whitespace-nowrap">
-                              {r.tip}
+                           <td className="px-6 py-5 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-600 text-xs font-medium uppercase tracking-wide">
+                                 {getTypeLabel(r.tip, r.is_bitiminde)}
+                              </span>
                            </td>
                            <td className="px-6 py-5 text-right font-mono text-neutral-900 whitespace-nowrap">
                               {Number(r.tutar).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
@@ -287,9 +347,25 @@ export default function IslemlerDemo() {
                            </td>
                            <td className="px-6 py-5 font-light text-neutral-500 truncate max-w-xs">{r.aciklama}</td>
                            <td className="px-6 py-5 text-center whitespace-nowrap">
-                             <div className="flex items-center justify-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => startEdit(r)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-colors"><FileText size={14} /></button>
-                                <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-neutral-200 text-neutral-400 hover:text-red-600 hover:border-red-600 transition-colors"><X size={14} /></button>
+                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                
+                                {r.tip === 'cek' && (
+                                  <button 
+                                    onClick={() => toggleCheckStatus(r)} 
+                                    title={r.is_bitiminde === 1 ? "Bekliyor durumuna al" : "Ödendi olarak işaretle"}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-full border transition-colors ${r.is_bitiminde === 1 ? 'bg-white border-neutral-300 text-neutral-500 hover:bg-neutral-100' : 'bg-white border-neutral-300 text-neutral-900 hover:bg-neutral-100'}`}
+                                  >
+                                    <RefreshCw size={14} />
+                                  </button>
+                                )}
+
+                                <button onClick={() => startEdit(r)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-neutral-200 text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-colors">
+                                    <FileText size={14} />
+                                </button>
+                                
+                                <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-neutral-200 text-neutral-400 hover:text-red-600 hover:border-red-600 transition-colors">
+                                    <X size={14} />
+                                </button>
                              </div>
                            </td>
                         </tr>
@@ -300,11 +376,10 @@ export default function IslemlerDemo() {
         </div>
       </div>
 
-      {/* --- EDIT MODAL --- */}
+      {/* EDIT MODAL */}
       {editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
            <div className="bg-white border border-neutral-200 shadow-2xl w-full max-w-5xl overflow-hidden max-h-[90vh] overflow-y-auto">
-             {/* Header */}
              <div className="flex items-center justify-between p-6 border-b border-neutral-100 bg-neutral-50">
                  <div className="flex items-center gap-3">
                      <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center"><FileText className="text-white" size={20} /></div>
@@ -312,13 +387,12 @@ export default function IslemlerDemo() {
                  </div>
                  <button onClick={() => setEditForm(null)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-200 text-neutral-500 transition-colors"><X size={20} /></button>
              </div>
-             {/* Body */}
              <div className="p-8">
                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                  
                  <div className="md:col-span-4">
                     <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">TARİH</label>
-                    <input type="date" className="w-full h-14 px-4 bg-white border border-neutral-300 outline-none" value={editForm.tarih} onChange={(e) => setEditForm({...editForm, tarih: e.target.value})} disabled={editForm.is_bitiminde} />
+                    <input type="date" className="w-full h-14 px-4 bg-white border border-neutral-300 outline-none" value={editForm.tarih} onChange={(e) => setEditForm({...editForm, tarih: e.target.value})} disabled={editForm.is_bitiminde && editForm.tip !== 'cek'} />
                  </div>
                  
                  <div className="md:col-span-4">
@@ -346,7 +420,6 @@ export default function IslemlerDemo() {
 
                </div>
              </div>
-             {/* Footer */}
              <div className="p-6 border-t border-neutral-100 bg-neutral-50 flex gap-4 justify-end">
                 <button onClick={() => setEditForm(null)} className="px-8 py-3 bg-white border border-neutral-300 text-neutral-600 hover:bg-neutral-100 transition-colors">İPTAL</button>
                 <button onClick={saveEdit} className="px-8 py-3 bg-neutral-900 text-white hover:bg-neutral-800 transition-colors flex items-center gap-2"><Save size={16} /> KAYDET</button>
@@ -365,7 +438,7 @@ export default function IslemlerDemo() {
              </div>
              <div className="flex p-4 gap-4">
                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 bg-white border border-neutral-300">VAZGEÇ</button>
-               <button onClick={() => { removeIslem(deleteId); setDeleteId(null); }} className="flex-1 py-3 bg-red-600 text-white hover:bg-red-700">SİL</button>
+               <button onClick={handleDelete} className="flex-1 py-3 bg-red-600 text-white hover:bg-red-700">SİL</button>
              </div>
            </div>
         </div>

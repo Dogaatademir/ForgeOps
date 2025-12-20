@@ -1,28 +1,48 @@
 import  { useMemo, useState } from "react";
 import { Printer, Search, PieChart, TrendingUp, TrendingDown, Filter } from 'lucide-react';
-import { CustomSelect } from "./CustomSelect";
-import { useData } from "./DataContext"; // Context Eklendi
+import { CustomSelect } from "../components/CustomSelect";
+import { useData } from "../context/DataContext"; 
+
+// --- YARDIMCI FORMAT FONKSİYONLARI ---
+const formatDateDisplay = (dateStr: string | null) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+};
+
+const getTypeLabel = (tip: string, is_bitiminde: any) => {
+  switch (tip) {
+    case 'tahsilat': return "TAHSİLAT";
+    case 'odeme': return "ÖDEME";
+    case 'odenecek': return "ÖDENECEK";
+    case 'alacak': return "ALACAK";
+    case 'cek': return is_bitiminde === 1 ? "ÇEK (ÖDENDİ)" : "ÇEK (VADELİ)";
+    default: return tip.toUpperCase();
+  }
+};
 
 export default function HesaplarDemo() {
-  const { kisiler, islemler } = useData(); // Global veriyi çekiyoruz
+  const { kisiler, islemler } = useData();
   
   const [seciliKisi, setSeciliKisi] = useState("");
   const [query, setQuery] = useState("");
 
   const handlePrint = () => window.print();
 
+  // --- KİŞİ LİSTESİ (ALFABETİK SIRALI) ---
   const kisiOptions = useMemo(
-    () => kisiler.map(k => ({ value: k.id, label: k.ad })),
+    () => kisiler
+      .map(k => ({ value: k.id, label: k.ad }))
+      .sort((a, b) => a.label.localeCompare(b.label, "tr")), // Türkçe A-Z
     [kisiler]
   );
 
-  // Sadece seçili kişiye ait işlemleri filtrele
   const personTransactions = useMemo(() => {
     if (!seciliKisi) return [];
     return islemler.filter(h => h.kisi_id === seciliKisi);
   }, [islemler, seciliKisi]);
 
-  // Arama filtresi uygula
   const filteredRows = useMemo(() => {
     const qText = query.trim().toLocaleLowerCase("tr");
     if (!qText) return personTransactions;
@@ -35,17 +55,25 @@ export default function HesaplarDemo() {
 
   // Toplamları Hesapla
   const toplam = useMemo(() => {
-    const sum = (tip: string) =>
-      filteredRows
-        .filter(h => h.tip === tip)
-        .reduce((s, h) => s + Number(h.tutar || 0), 0); // Context'teki 'tutar' zaten TL çevrilmiş hali
+    const odeme = filteredRows
+      .filter(h => h.tip === "odeme" || h.tip === "cek")
+      .reduce((s, h) => s + Number(h.tutar || 0), 0);
 
-    const tahsilat = sum("tahsilat");
-    const odeme = sum("odeme");
-    const odenecek = sum("odenecek");
-    const alacak = sum("alacak");
+    const tahsilat = filteredRows
+      .filter(h => h.tip === "tahsilat")
+      .reduce((s, h) => s + Number(h.tutar || 0), 0);
+      
+    const odenecek = filteredRows
+      .filter(h => h.tip === "odenecek")
+      .reduce((s, h) => s + Number(h.tutar || 0), 0);
+      
+    const alacak = filteredRows
+      .filter(h => h.tip === "alacak")
+      .reduce((s, h) => s + Number(h.tutar || 0), 0);
 
-    return { tahsilat, odeme, odenecek, alacak, net: -odenecek + odeme - tahsilat + alacak };
+    const net = (alacak - tahsilat) - (odenecek - odeme);
+
+    return { tahsilat, odeme, odenecek, alacak, net };
   }, [filteredRows]);
 
   return (
@@ -124,26 +152,14 @@ export default function HesaplarDemo() {
                 {filteredRows.map((r, i) => (
                   <tr key={i} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-6 py-4 font-light text-neutral-600 whitespace-nowrap">
-                      {r.is_bitiminde ? (
-                        <span className="text-xs bg-neutral-100 px-2 py-1 rounded">İŞ BİTİMİ</span>
-                      ) : (
-                        r.tarih ? r.tarih.split('-').reverse().join('.') : "—"
-                      )}
+                       {r.is_bitiminde && r.tip !== 'cek' ? "—" : formatDateDisplay(r.tarih)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`text-xs font-medium px-2 py-1 tracking-wide uppercase ${
-                          r.tip === "tahsilat"
-                            ? "text-green-700 bg-green-50"
-                            : r.tip === "odeme"
-                            ? "text-red-700 bg-red-50"
-                            : "text-neutral-700 bg-neutral-100"
-                        }`}
-                      >
-                        {r.tip}
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-600 text-xs font-medium uppercase tracking-wide">
+                        {getTypeLabel(r.tip, r.is_bitiminde)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right font-light text-neutral-900 tracking-wide whitespace-nowrap">
+                    <td className="px-6 py-4 text-right font-mono text-neutral-900 whitespace-nowrap">
                       {r.tutar?.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
                       {r.doviz !== "TRY" && <span className="text-xs text-neutral-400 ml-1">({r.doviz})</span>}
                     </td>
@@ -181,7 +197,7 @@ export default function HesaplarDemo() {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-neutral-400 mb-1 tracking-wider uppercase">ÖDEME</div>
+                <div className="text-xs text-neutral-400 mb-1 tracking-wider uppercase">ÖDEME (+ ÇEK)</div>
                 <div className="text-lg font-light text-red-600">
                   {toplam.odeme.toLocaleString("tr-TR")} ₺
                 </div>
@@ -210,7 +226,7 @@ export default function HesaplarDemo() {
                     <TrendingDown size={16} className="text-red-500" />
                   )}
                   <span className="text-xs text-neutral-400 font-bold uppercase tracking-wider">
-                    NET DURUM
+                    NET BAKİYE
                   </span>
                 </div>
                 <div
@@ -222,6 +238,9 @@ export default function HesaplarDemo() {
                     minimumFractionDigits: 2,
                   })}{" "}
                   ₺
+                </div>
+                <div className="text-[10px] text-neutral-400 mt-1">
+                   {toplam.net >= 0 ? "Biz Alacaklıyız" : "Biz Borçluyuz"}
                 </div>
               </div>
             </div>
@@ -254,9 +273,11 @@ export default function HesaplarDemo() {
             {filteredRows.map((r, i) => (
               <tr key={i} className="border-b border-neutral-100">
                 <td className="py-2 text-neutral-700">
-                  {r.is_bitiminde ? "İş Bitimi" : (r.tarih ? r.tarih.split('-').reverse().join('.') : '')}
+                  {r.is_bitiminde && r.tip !== 'cek' ? "İş Bitimi" : formatDateDisplay(r.tarih)}
                 </td>
-                <td className="py-2 text-neutral-700 capitalize">{r.tip}</td>
+                <td className="py-2 text-neutral-700">
+                  {getTypeLabel(r.tip, r.is_bitiminde)}
+                </td>
                 <td className="py-2 text-right font-mono text-neutral-900">
                   {r.tutar?.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
                 </td>

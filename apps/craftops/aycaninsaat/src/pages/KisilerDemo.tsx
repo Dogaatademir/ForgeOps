@@ -1,7 +1,7 @@
-import  { useState } from "react";
+import { useState, useMemo } from "react";
 import { Users, UserPlus, Trash2, Briefcase } from "lucide-react";
-import { CustomSelect } from "./CustomSelect";
-import { useData } from "./DataContext"; // Context eklendi
+import { CustomSelect } from "../components/CustomSelect";
+import { useData } from "../context/DataContext";
 
 const ROLE_LABEL: Record<string, string> = {
   musteri: "Müşteri",
@@ -17,34 +17,51 @@ const ROLE_OPTIONS = Object.entries(ROLE_LABEL).map(([value, label]) => ({
 }));
 
 export default function KisilerDemo() {
-  // Mock data yerine Context kullanıyoruz
   const { kisiler, addKisi, removeKisi } = useData();
   
   const [form, setForm] = useState({ ad: "", rol: "", telefon: "", notu: "" });
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // --- KİŞİ EKLEME ---
   async function add() {
     if (!form.ad.trim()) return alert("Ad giriniz");
     
-    // Context'e ekleme yapıyoruz
-    addKisi({ 
-      id: Math.random().toString(), 
-      ad: form.ad, 
-      rol: form.rol, 
-      telefon: form.telefon, 
-      notu: form.notu 
-    });
-    
-    setForm({ ad: "", rol: "", telefon: "", notu: "" });
+    try {
+      await addKisi({ 
+        id: crypto.randomUUID(), 
+        ad: form.ad, 
+        rol: form.rol, 
+        telefon: form.telefon, 
+        notu: form.notu 
+      });
+      
+      setForm({ ad: "", rol: "", telefon: "", notu: "" });
+    } catch (error) {
+      console.error("Kişi ekleme hatası:", error);
+      alert("Kişi eklenirken hata oluştu.");
+    }
   }
 
+  // --- KİŞİ SİLME ---
   async function del(id: string) {
-    setDeletingId(id);
-    setTimeout(() => {
-      removeKisi(id); // Context'ten silme
+    if(!confirm("Bu kişiyi ve kişiye ait tüm işlemleri silmek istediğinize emin misiniz?")) return;
+
+    try {
+      setDeletingId(id);
+      await removeKisi(id);
+    } catch (error) {
+      console.error("Silme hatası:", error);
+      alert("Silme işlemi başarısız.");
+    } finally {
       setDeletingId(null);
-    }, 400);
+    }
   }
+
+  // --- SIRALAMA (A-Z) ---
+  const sortedKisiler = useMemo(() => {
+    // Türkçe karakter duyarlı sıralama (a.ad ile b.ad karşılaştırılır)
+    return [...kisiler].sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+  }, [kisiler]);
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -146,8 +163,8 @@ export default function KisilerDemo() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {/* Context'ten gelen kisiler listesini kullanıyoruz */}
-              {kisiler.map((r) => (
+              {/* sortedKisiler kullanılıyor */}
+              {sortedKisiler.map((r) => (
                 <tr
                   key={r.id}
                   className="hover:bg-neutral-50 group transition-colors"
@@ -178,7 +195,7 @@ export default function KisilerDemo() {
                   </td>
                 </tr>
               ))}
-              {kisiler.length === 0 && (
+              {sortedKisiler.length === 0 && (
                 <tr>
                   <td
                     colSpan={4}

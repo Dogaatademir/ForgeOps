@@ -8,18 +8,18 @@ import {
   X, 
   Settings,
   PieChart,
-  Scale // YENİ İKON (Terazi)
+  Scale 
 } from 'lucide-react';
 
-import { DataProvider } from './DataContext';
-
 // Sayfa Bileşenleri
-import OverviewPage from './OverviewPage';
-import HesaplarDemo from './HesaplarDemo';
-import KisilerDemo from './KisilerDemo';
-import IslemlerDemo from './IslemlerDemo';
-import BorcAlacakPage from './BorcAlacakPage'; // YENİ SAYFA
-import SettingsPage from './SettingsPage';
+import OverviewPage from './pages/OverviewPage';
+import HesaplarDemo from './pages/HesaplarDemo';
+import KisilerDemo from './pages/KisilerDemo';
+import IslemlerDemo from './pages/IslemlerDemo';
+import BorcAlacakPage from './pages/BorcAlacakPage'; 
+import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage';
+import { DataProvider } from './context/DataContext';
 
 interface SidebarItemProps {
   to: string;
@@ -46,8 +46,17 @@ const SidebarItem = ({ to, icon: Icon, label, onClick }: SidebarItemProps) => (
 );
 
 export default function App() {
+  // NOT: Yönlendirme kodu kaldırıldı. Artık direkt açılacak.
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // --- GİRİŞ KONTROLÜ ---
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+  }
+
+  // --- ANA UYGULAMA ---
   return (
     <BrowserRouter basename="/craftops/aycaninsaat">
       <DataProvider>
@@ -86,10 +95,7 @@ export default function App() {
 
             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
               <SidebarItem to="/" icon={LayoutDashboard} label="GENEL BAKIŞ" onClick={() => setIsSidebarOpen(false)} />
-              
-              {/* YENİ MENU ÖĞESİ */}
               <SidebarItem to="/borc-alacak" icon={Scale} label="BORÇ & ALACAK" onClick={() => setIsSidebarOpen(false)} />
-
               <SidebarItem to="/hesaplar" icon={PieChart} label="HESAPLAR" onClick={() => setIsSidebarOpen(false)} />
               <SidebarItem to="/kisiler" icon={Users} label="KİŞİLER" onClick={() => setIsSidebarOpen(false)} />
               <SidebarItem to="/islemler" icon={ArrowRightLeft} label="İŞLEMLER" onClick={() => setIsSidebarOpen(false)} />
@@ -117,14 +123,13 @@ export default function App() {
                    </p>
                 </div>  </div>
               </div>
-
             </header>
 
             <main className="flex-1 overflow-auto p-4 md:p-8">
               <div className="max-w-7xl mx-auto">
                 <Routes>
                   <Route path="/" element={<OverviewPage />} />
-                  <Route path="/borc-alacak" element={<BorcAlacakPage />} /> {/* YENİ ROTA */}
+                  <Route path="/borc-alacak" element={<BorcAlacakPage />} />
                   <Route path="/hesaplar" element={<HesaplarDemo />} />
                   <Route path="/kisiler" element={<KisilerDemo />} />
                   <Route path="/islemler" element={<IslemlerDemo />} />
