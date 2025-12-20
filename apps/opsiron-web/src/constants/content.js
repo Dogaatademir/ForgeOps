@@ -123,7 +123,7 @@ export const CRAFTOPS_FEATURES = {
   financial: [
     "Reçete Bazlı Maliyet",
     "Üretim Fire Analizi",
-    "Satınalma & Satış",
+    "Satın alma & Satış",
     "Kârlılık Raporları",
   ],
   
@@ -154,7 +154,7 @@ export const CRAFTOPS_FEATURES = {
     },
     {
       icon: "ArrowRightLeft",
-      title: "Satınalma & Satış",
+      title: "Satın alma & Satış",
       description: "Tekliften siparişe, siparişten faturaya dönüşen entegre süreç yönetimi.",
     },
     {

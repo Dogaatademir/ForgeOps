@@ -224,14 +224,15 @@ export default function IslemlerDemo() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-             <div className="md:col-span-3">
+             {/* TARİH ALANI - GÜNCELLENDİ: w-full ve appearance-none eklendi */}
+             <div className="md:col-span-3 w-full">
               <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">
                 {form.tip === 'cek' ? 'ÇEK VADESİ' : 'TARİH'}
               </label>
-              <div className="relative">
+              <div className="relative w-full">
                 <input
                   type="date"
-                  className="w-full h-14 px-4 bg-white border border-neutral-300 text-neutral-900 outline-none focus:border-neutral-900 font-light disabled:bg-neutral-100 disabled:text-neutral-400 transition-colors"
+                  className="w-full h-14 px-4 bg-white border border-neutral-300 text-neutral-900 outline-none focus:border-neutral-900 font-light disabled:bg-neutral-100 disabled:text-neutral-400 transition-colors appearance-none"
                   value={form.tarih}
                   onChange={(e) => setForm({ ...form, tarih: e.target.value })}
                   disabled={form.is_bitiminde && form.tip !== 'cek'}
@@ -242,7 +243,8 @@ export default function IslemlerDemo() {
               </div>
             </div>
 
-            <div className="md:col-span-3">
+            {/* İŞLEM TİPİ ALANI - GÜNCELLENDİ: w-full eklendi */}
+            <div className="md:col-span-3 w-full">
                <CustomSelect
                 label="İŞLEM TİPİ"
                 value={form.tip}
@@ -376,7 +378,7 @@ export default function IslemlerDemo() {
         </div>
       </div>
 
-      {/* EDIT MODAL */}
+    {/* EDIT MODAL */}
       {editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
            <div className="bg-white border border-neutral-200 shadow-2xl w-full max-w-5xl overflow-hidden max-h-[90vh] overflow-y-auto">
@@ -390,23 +392,31 @@ export default function IslemlerDemo() {
              <div className="p-8">
                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                  
-                 <div className="md:col-span-4">
+                 {/* TARİH ALANI: w-full ve appearance-none eklendi */}
+                 <div className="md:col-span-4 w-full">
                     <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">TARİH</label>
-                    <input type="date" className="w-full h-14 px-4 bg-white border border-neutral-300 outline-none" value={editForm.tarih} onChange={(e) => setEditForm({...editForm, tarih: e.target.value})} disabled={editForm.is_bitiminde && editForm.tip !== 'cek'} />
+                    <input 
+                      type="date" 
+                      className="w-full h-14 px-4 bg-white border border-neutral-300 outline-none appearance-none text-neutral-900 font-light" 
+                      value={editForm.tarih} 
+                      onChange={(e) => setEditForm({...editForm, tarih: e.target.value})} 
+                      disabled={editForm.is_bitiminde && editForm.tip !== 'cek'} 
+                    />
                  </div>
                  
-                 <div className="md:col-span-4">
+                 {/* İŞLEM TİPİ: w-full eklendi */}
+                 <div className="md:col-span-4 w-full">
                     <CustomSelect label="İŞLEM TİPİ" value={editForm.tip} onChange={(val) => setEditForm({...editForm, tip: val})} options={ISLEM_TIP_OPTIONS} placeholder="Seç" icon={CreditCard}/>
                  </div>
 
-                 <div className="md:col-span-4">
+                 <div className="md:col-span-4 w-full">
                    <CustomSelect label="KİŞİ" value={editForm.kisi_id} onChange={(val) => setEditForm({...editForm, kisi_id: val})} options={kisiOptions} placeholder="Seç" icon={User} />
                  </div>
 
                  <div className="md:col-span-6 flex gap-3">
                     <div className="flex-1">
                       <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">TUTAR</label>
-                      <input className="w-full h-14 px-4 border border-neutral-300 outline-none" value={editForm.tutar} onChange={(e) => setEditForm({...editForm, tutar: e.target.value})} onBlur={() => setEditForm({...editForm, tutar: formatTR(editForm.tutar)})} />
+                      <input className="w-full h-14 px-4 border border-neutral-300 outline-none font-light" value={editForm.tutar} onChange={(e) => setEditForm({...editForm, tutar: e.target.value})} onBlur={() => setEditForm({...editForm, tutar: formatTR(editForm.tutar)})} />
                     </div>
                     <div className="w-32">
                         <CustomSelect label="DÖVİZ" value={editForm.doviz} onChange={(val) => setEditForm({...editForm, doviz: val})} options={DOVIZ_OPTIONS} placeholder="Seç" />
@@ -415,7 +425,7 @@ export default function IslemlerDemo() {
 
                  <div className="md:col-span-6">
                     <label className="block text-xs font-medium text-neutral-500 mb-3 tracking-wider">AÇIKLAMA</label>
-                    <input className="w-full h-14 px-4 border border-neutral-300 outline-none" value={editForm.aciklama} onChange={(e) => setEditForm({...editForm, aciklama: e.target.value})} />
+                    <input className="w-full h-14 px-4 border border-neutral-300 outline-none font-light" value={editForm.aciklama} onChange={(e) => setEditForm({...editForm, aciklama: e.target.value})} />
                  </div>
 
                </div>
@@ -435,6 +445,8 @@ export default function IslemlerDemo() {
              <div className="bg-neutral-50 p-6 border-b border-neutral-100 text-center">
                 <div className="mx-auto w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4"><AlertTriangle className="text-red-600" size={24} /></div>
                 <h3 className="text-lg font-light text-neutral-900 tracking-tight">EMİN MİSİNİZ?</h3>
+                <h1 className="text-lg font-light text-neutral-400 tracking-tight">Bu işlem geri alınamaz.</h1>
+                
              </div>
              <div className="flex p-4 gap-4">
                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 bg-white border border-neutral-300">VAZGEÇ</button>

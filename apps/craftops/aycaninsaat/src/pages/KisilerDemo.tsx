@@ -145,68 +145,74 @@ export default function KisilerDemo() {
 
         {/* LİSTE */}
         <div className="bg-white border border-neutral-200">
-          <table className="w-full text-left">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
-              <tr>
-                <th className="px-6 py-4 text-xs font-medium text-neutral-500 tracking-wider">
-                  AD / ÜNVAN
-                </th>
-                <th className="px-6 py-4 text-xs font-medium text-neutral-500 tracking-wider">
-                  ROL
-                </th>
-                <th className="px-6 py-4 text-xs font-medium text-neutral-500 tracking-wider">
-                  NOTLAR
-                </th>
-                <th className="px-6 py-4 text-right w-24 text-xs font-medium text-neutral-500 tracking-wider">
-                  İŞLEM
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {/* sortedKisiler kullanılıyor */}
-              {sortedKisiler.map((r) => (
-                <tr
-                  key={r.id}
-                  className="hover:bg-neutral-50 group transition-colors"
-                >
-                  <td className="px-6 py-5 font-light text-neutral-900 text-lg">
-                    {r.ad}
-                  </td>
-                  <td className="px-6 py-5">
-                    {r.rol ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 tracking-wide border border-neutral-200">
-                        {ROLE_LABEL[r.rol]}
-                      </span>
-                    ) : (
-                      <span className="text-neutral-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-5 font-light text-neutral-500 italic">
-                    {r.notu || "—"}
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <button
-                      onClick={() => del(r.id)}
-                      disabled={deletingId === r.id}
-                      className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          
+          {/* SCROLL WRAPPER BAŞLANGIÇ */}
+          <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[600px]"> {/* min-w eklendi */}
+                <thead className="bg-neutral-50 border-b border-neutral-200">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-medium text-neutral-500 tracking-wider">
+                      AD / ÜNVAN
+                    </th>
+                    <th className="px-6 py-4 text-xs font-medium text-neutral-500 tracking-wider">
+                      ROL
+                    </th>
+                    <th className="px-6 py-4 text-xs font-medium text-neutral-500 tracking-wider">
+                      NOTLAR
+                    </th>
+                    <th className="px-6 py-4 text-right w-24 text-xs font-medium text-neutral-500 tracking-wider">
+                      İŞLEM
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {/* sortedKisiler kullanılıyor */}
+                  {sortedKisiler.map((r) => (
+                    <tr
+                      key={r.id}
+                      className="hover:bg-neutral-50 group transition-colors"
                     >
-                      <Trash2 size={18} strokeWidth={1.5} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {sortedKisiler.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="p-12 text-center text-neutral-400 font-light"
-                  >
-                    Henüz kişi eklenmedi.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      <td className="px-6 py-5 font-light text-neutral-900 text-lg">
+                        {r.ad}
+                      </td>
+                      <td className="px-6 py-5">
+                        {r.rol ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 tracking-wide border border-neutral-200">
+                            {ROLE_LABEL[r.rol]}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 font-light text-neutral-500 italic">
+                        {r.notu || "—"}
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <button
+                          onClick={() => del(r.id)}
+                          disabled={deletingId === r.id}
+                          className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 size={18} strokeWidth={1.5} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {sortedKisiler.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="p-12 text-center text-neutral-400 font-light"
+                      >
+                        Henüz kişi eklenmedi.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+          </div>
+          {/* SCROLL WRAPPER BİTİŞ */}
+          
         </div>
       </div>
     </div>

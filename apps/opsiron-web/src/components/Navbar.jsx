@@ -16,9 +16,22 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Arka plan rengini belirleyen fonksiyon
+  const getNavbarClasses = () => {
+    if (isOpen) return 'bg-white border-border-gray';
+    if (isScrolled) return 'bg-white/95 backdrop-blur-md border-border-gray';
+    return 'bg-transparent border-transparent';
+  };
+
+  // Geçiş hızını belirleyen mantık
+  // Menü açılırken ANINDA beyaz olsun (duration-0), kapanırken veya scroll ederken yumuşak olsun (duration-300)
+  const transitionClass = isOpen ? 'duration-0' : 'duration-300';
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[100] h-20 transition-all duration-300 border-b
-      ${isScrolled ? 'bg-white/95 backdrop-blur-md border-border-gray' : 'bg-transparent border-transparent'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-[100] h-20 transition-all border-b 
+      ${transitionClass} 
+      ${getNavbarClasses()}`}
+    >
       
       <div className="container mx-auto px-6 h-full flex justify-between items-center">
         {/* LOGO */}
@@ -39,7 +52,6 @@ export default function Navbar() {
               {item.label}
             </Link>
           ))}
-       
         </div>
 
         {/* MOBILE TOGGLE */}
@@ -56,7 +68,7 @@ export default function Navbar() {
             {item.label}
           </Link>
         ))}
-        <Button to="/contact" variant="primary" className="mt-4" onClick={() => setIsOpen(false)}>Hemen Başla</Button>
+
       </div>
     </nav>
   );
